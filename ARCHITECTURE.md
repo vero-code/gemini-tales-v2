@@ -42,16 +42,33 @@ Gemini Tales is an integrated AI storytelling system built on the Google Agent D
 
 The system is deployed as a suite of microservices: a main FastAPI server serves the frontend and exposes the chat API, while four independent agents handle the processing logic.
 
-User Browser
-  └── Story Engine UI (HTTP → FastAPI → ADK Agents)
-
-Server (Cloud Run / localhost)
-  ├── FastAPI app (port 8000)
-  ├── Orchestrator (port 8004)
-  ├── Adventure Seeker (Researcher - 8001)
-  ├── Guardian of Balance (Judge - 8002)
-  └── Storysmith (Content Builder - 8003)
-
+```mermaid
+graph TD
+    User([User]) <--> Browser["Browser (React UI)"]
+    
+    subgraph "Backend Server"
+        Browser <-->|WebSocket Proxy| Proxy[WebSocket Proxy :8000]
+        Browser -->|Static Files| Static[Static File Host]
+    end
+    
+    subgraph "Google Cloud / AI Services"
+        Proxy <-->|WebSocket| LiveAPI[Gemini Live API]
+        Storysmith -->|LLM Call| FlashPro[Gemini 2.5 Flash / Pro]
+        Researcher -->|Search| GoogleSearch[Google Search API]
+    end
+    
+    subgraph "Multi-agent Story Engine (ADK)"
+        Proxy -.->|A2A| Orchestrator[Orchestrator :8004]
+        Orchestrator <-->|A2A| Researcher[Adventure Seeker :8001]
+        Orchestrator <-->|A2A| Judge[Guardian of Balance :8002]
+        Orchestrator <-->|A2A| Storysmith[Storysmith :8003]
+    end
+    
+    style Browser fill:#f9f,stroke:#333,stroke-width:2px
+    style Proxy fill:#f9f,stroke:#333,stroke-width:2px
+    style Orchestrator fill:#ccf,stroke:#333,stroke-width:2px
+    style LiveAPI fill:#eee,stroke:#333,stroke-dasharray: 5 5
+```
 
 ---
 
@@ -61,27 +78,24 @@ Server (Cloud Run / localhost)
 gemini-tales/
 ├── app/                        # Main FastAPI Server & Frontend
 │   ├── main.py                 # WebSocket Proxy & Static Site Host
-│   ├── frontend/               # React Frontend source
-│   │   ├── src/                # TypeScript/React components
-│   │   ├── dist/               # Production build (mounted by FastAPI)
-│   │   └── package.json        # Node.js dependencies
-│   ├── authenticated_httpx.py  # Google-auth client factory
-│   └── Dockerfile
+│   ├── frontend/               # React Frontend (TypeScript)
+│   │   ├── src/                # TSX/TS components and logic
+│   │   ├── dist/               # Production build
+│   │   └── package.json        # Node.js dependencies (React 19)
 │
 ├── agents/                     # ADK Agents (microservices)
-│   ├── researcher/             # Adventure Seeker (Search + Planning)
-│   ├── judge/                  # Guardian of Balance (Quality evaluation)
-│   ├── content_builder/        # Storysmith (Markdown generation)
-│   └── orchestrator/           # Pipeline logic (SequentialAgent + LoopAgent)
+│   ├── researcher/             # Adventure Seeker
+│   ├── judge/                  # Guardian of Balance
+│   ├── content_builder/        # Storysmith
+│   └── orchestrator/           # Pipeline logic
 │
 ├── shared/                     # Shared utilities for agents
 │   ├── adk_app.py              # Common A2A server entry point
-│   ├── config.py               # Shared Gemini config (Safety settings)
-│   └── authenticated_httpx.py  # Shared auth client
+│   └── config.py               # Shared Gemini config (Safety settings)
 │
 ├── assets/                     # UI Assets & Documentation images
 ├── pyproject.toml              # Root workspace manifest (uv)
-├── run_local.ps1               # Starts all 5 services locally
+├── run_local.ps1               # Starts all 5 services locally (uv)
 └── deploy.ps1                  # Deploys all 5 services to Cloud Run
 ```
 
@@ -89,45 +103,24 @@ gemini-tales/
 
 ## 3. Subsystem A — Interactive Story UI (Frontend)
 
-The frontend is a modern, high-performance web interface built with **React**, **Vite**, and **Tailwind CSS**. It serves as a real-time bridge to the **Gemini Live API** for immersive storytelling.
+The frontend is a high-performance web interface migrated to **TypeScript** for enhanced stability. It orchestrates a unified multimodal stream.
 
-### 3.1 Component Map
+### 3.1 Multimodal Pipeline (Voice + Vision)
 
-```
-app/frontend/src/
-  ├── App.tsx       — Main application container & logic
-  ├── types.ts      — Shared TypeScript interfaces
-  └── utils/
-      ├── geminilive.ts — Gemini Live API client & tool definitions
-      └── mediaUtils.ts — Audio/Video streaming utilities
-```
+Unlike traditional chatbots, Gemini Tales uses a synchronized stream:
+- **Unified Session**: A single WebSocket session handles both **PCM Audio** (captured via `AudioWorklet`) and **Video Frames** (1 FPS JPEG/Base64).
+- **Spatial/Visual Context**: Gemini processes video frames in real-time, allowing it to comment on physical actions or surroundings during the audio story.
 
-### 3.2 State Management & Hooks
+### 3.2 Auto-start Logic
 
-The application uses standard React state (`useState`, `useRef`, `useEffect`) to manage the complex real-time story state:
+To minimize friction, the application implements an automatic story trigger:
+1. **Handshake**: Browser establishes `ws://` connection via the FastAPI proxy.
+2. **Setup**: Once the proxy confirms `SETUP_COMPLETE` from Google, the frontend automatically sends a hidden initiation prompt.
+3. **Immersive Entry**: The AI begins the narrative immediately, greeting the user with voice and an initial illustration.
 
-1. **App State**: Tracks connection status (`IDLE`, `STARTING`, `STORYTELLING`, `ERROR`).
-2. **Media State**: Manages microphone/camera activation and selected devices.
-3. **Story State**: Handles AI transcriptions, generated illustrations, and story choices.
-4. **Achievements**: Persists unlocked badges for the current session.
+### 3.3 Media & Device Management
 
-### 3.3 Gemini Live Integration
-
-The frontend establishes a direct WebSocket connection to the backend proxy, which forwards messages to the Gemini Live API:
-
-- **Audio Pipeline**: Raw PCM audio is captured from the mic, base64 encoded, and sent to Gemini. AI audio responses are decoded and played using the `AudioContext` API.
-- **Vision Pipeline**: Video frames are captured at a low frame rate (1 fps) and sent to Gemini for visual awareness.
-- **Interruption Handling**: The client listens for the `INTERRUPTED` event to stop local audio playback immediately.
-
-### 3.4 Tool-call Protocol
-
-The system implements a custom tool-calling protocol over the Gemini Live session:
-
-| Tool | Action |
-|---|---|
-| `generateIllustration` | Triggers **Gemini 2.5 Flash Image** to create a scene illustration. |
-| `awardBadge` | Unlocks a virtual achievement in the UI. |
-| `showChoice` | Renders interactive buttons for story branch selection. |
+The UI includes a robust device initialization flow (`fetchDevices`) that handles permissions and allows users to swap microphones/cameras on-the-fly without breaking the live session.
 
 ---
 
@@ -137,23 +130,29 @@ The system implements a custom tool-calling protocol over the Gemini Live sessio
 
 | Agent | Model | Key tools / output | ADK type |
 |---|---|---|---|
-| **Adventure Seeker** (Researcher) | `gemini-2.5-flash` | `google_search` + `BuiltInPlanner` | `Agent` |
-| **Guardian of Balance** (Judge) | `gemini-2.5-flash` | Structured `JudgeFeedback` (`{ status, feedback }`) | `Agent` with `output_schema` |
-| **Storysmith** (Content Builder) | `gemini-2.5-pro` | Markdown Interactive Story | `Agent` |
-| **Orchestrator** | — | Coordinates the pipeline | `SequentialAgent` + `LoopAgent` |
+| **Adventure Seeker** | `gemini-2.5-flash` | `google_search` | `Agent` |
+| **Guardian of Balance** | `gemini-2.5-flash` | Safety/Quality Evaluation | `Agent` |
+| **Storysmith** | `gemini-2.5-pro` | High-fidelity narrative | `Agent` |
+| **Orchestrator** | — | A2A Coordination | `SequentialAgent` |
 
 ### 4.2 Orchestration Logic
 
-```
-story_engine_pipeline (SequentialAgent)
-  └─► research_loop (LoopAgent, max_iterations=3)
-  │     ├─► adventure_seeker  → saves output to state["research_findings"]
-  │     ├─► guardian_of_balance → saves JudgeFeedback to state["judge_feedback"]
-  │     └─► escalation_checker (BaseAgent)
-  │           ├─► feedback.status == "pass"  → EventActions(escalate=True)  ← exits loop
-  │           └─► feedback.status == "fail"  → loop again (up to 3 times)
-  │
-  └─► storysmith              → reads state["research_findings"], outputs markdown story
+```mermaid
+stateDiagram-v2
+    [*] --> ResearchLoop
+    
+    state ResearchLoop {
+        [*] --> AdventureSeeker
+        AdventureSeeker --> GuardianOfBalance: findings
+        GuardianOfBalance --> EscalationChecker: feedback
+        
+        state EscalationChecker <<choice>>
+        EscalationChecker --> [*]: status == "pass" (Escalate)
+        EscalationChecker --> AdventureSeeker: status == "fail" (Loop)
+    }
+    
+    ResearchLoop --> Storysmith
+    Storysmith --> [*]
 ```
 
 **EscalationChecker** is a custom `BaseAgent` subclass. It reads `session.state["judge_feedback"]` and yields an `Event(escalate=True)` to break the `LoopAgent`, or an empty event to continue.
@@ -192,22 +191,28 @@ Orchestrator
 
 ### 5.1 Real-time Storytelling Flow (WebSocket)
 
-```
-┌─────────────────────────┐          ┌─────────────────────────┐          ┌─────────────────────────┐
-│   Browser (React UI)    │          │     FastAPI Proxy       │          │    Gemini Live API      │
-└────────────┬────────────┘          └────────────┬────────────┘          └────────────┬────────────┘
-             │                                    │                                    │
-             │ ─── WebSocket Connection ─────────►│                                    │
-             │                                    │ ─── Handshake & Auth ─────────────►│
-             │                                    │                                    │
-             │ ◄── [Setup Complete] ──────────────│ ◄──────────────────────────────────│
-             │                                    │                                    │
-             │ ─── Audio/Video Stream ───────────►│ ─── Forward Binary ───────────────►│
-             │                                    │                                    │
-             │ ◄── AI Audio & Transcript ─────────│ ◄── Forward Response ──────────────│
-             │                                    │                                    │
-             │ ◄── [TOOL_CALL: awardBadge] ───────│ ◄──────────────────────────────────│
-             │                                    │                                    │
+```mermaid
+sequenceDiagram
+    participant B as Browser (React UI)
+    participant P as FastAPI Proxy
+    participant G as Gemini Live API
+
+    B->>P: 1. WebSocket Connection
+    P->>G: 2. Handshake & Auth (OAuth2)
+    G-->>P: 3. Setup Complete
+    P-->>B: 4. Setup Complete
+    
+    rect rgb(240, 240, 240)
+        Note over B, G: Real-time Interaction
+        B->>+P: Audio/Video Stream
+        P->>+G: Forward Binary
+        G-->>-P: AI Audio & Transcript
+        P-->>-B: Forward Response
+    end
+    
+    Note over G, B: Tool Calling
+    G->>P: TOOL_CALL: awardBadge
+    P->>B: forward awardBadge
 ```
 
 ### 5.2 Multi-agent Research Flow
@@ -241,6 +246,21 @@ All five services are containerised with individual `Dockerfile`s and deployed t
 3. Storysmith → deployed, URL captured
 4. Orchestrator → deployed (receives agent URLs as env vars), URL captured
 5. App → deployed (receives orchestrator URL as `AGENT_SERVER_URL`)
+
+```mermaid
+graph TD
+    A[Adventure Seeker] -->|Deployed| B[URL Captured]
+    C[Guardian of Balance] -->|Deployed| D[URL Captured]
+    E[Storysmith] -->|Deployed| F[URL Captured]
+    
+    B --> G[Orchestrator]
+    D --> G
+    F --> G
+    
+    G -->|Deployed w/ Env Vars| H[Orchestrator URL Captured]
+    H --> I[FastAPI App]
+    I -->|Deployed w/ AGENT_SERVER_URL| J[Public Frontend]
+```
 
 The `course-creator` (App) Cloud Run service is publicly accessible. The four agent services have `--no-allow-unauthenticated` and require a Google OAuth2 bearer token — handled transparently by `authenticated_httpx.py` using Application Default Credentials.
 
