@@ -415,6 +415,4 @@ class GeminiLiveAPI {
   }
 }
 
-console.log("loaded geminiLiveApi.js");
-
 export { GeminiLiveAPI, FunctionCallDefinition, MultimodalLiveResponseType };

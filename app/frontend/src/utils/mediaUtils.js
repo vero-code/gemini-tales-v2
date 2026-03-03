@@ -283,10 +283,10 @@ class VideoStreamer extends BaseVideoCapture {
   async start(options = {}) {
     try {
       const {
-        fps = 1,
+        fps = 5,
         width = 640,
         height = 480,
-        facingMode = "user", // 'user' for front camera, 'environment' for back
+        facingMode = "user",
         quality = 0.8,
         deviceId = null,
       } = options;

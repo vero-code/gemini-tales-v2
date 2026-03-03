@@ -414,5 +414,3 @@ class GeminiLiveAPI {
     this.sendRealtimeInputMessage(base64Image, mime_type);
   }
 }
-
-console.log("loaded geminiLiveApi.js");

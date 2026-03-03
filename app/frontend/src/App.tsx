@@ -30,6 +30,7 @@ INTERACTION RULES:
 2. If the child interrupts, stop the story immediately, answer them, and then ask if they want to continue.
 3. Keep the conversation natural and fun.
 4. VISUALS: Call 'generateIllustration' for every new major scene.
+5. GAMEPLAY: Ask the child to perform a physical action (like waving hands, jumping, spinning) to help the hero, ask them to SAY A MAGIC WORD while doing it (e.g., "Wave your hands and say 'WHOOSH'!"). IMPORTANT: After asking, STOP SPEAKING immediately. Watch the video feed. When you see the child doing the action and hearing the magic word, praise them and continue the story.
 `;
 
 class GenerateIllustrationTool extends FunctionCallDefinition {
