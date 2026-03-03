@@ -58,7 +58,7 @@ graph TD
     end
     
     subgraph "Multi-agent Story Engine (ADK)"
-        Proxy -.->|A2A| Orchestrator[Orchestrator :8004]
+        Proxy -->|HTTP Stream| Orchestrator[Orchestrator :8004]
         Orchestrator <-->|A2A| Researcher[Adventure Seeker :8001]
         Orchestrator <-->|A2A| Judge[Guardian of Balance :8002]
         Orchestrator <-->|A2A| Storysmith[Storysmith :8003]
@@ -115,8 +115,17 @@ Unlike traditional chatbots, Gemini Tales uses a synchronized stream:
 
 To minimize friction, the application implements an automatic story trigger:
 1. **Handshake**: Browser establishes `ws://` connection via the FastAPI proxy.
-2. **Setup**: Once the proxy confirms `SETUP_COMPLETE` from Google, the frontend automatically sends a hidden initiation prompt.
-3. **Immersive Entry**: The AI begins the narrative immediately, greeting the user with voice and an initial illustration.
+2. **Agent Sync**: Upon `SETUP_COMPLETE`, the frontend calls the `/api/chat_stream` endpoint.
+3. **Pre-story Research**: The **Orchestrator** triggers the agent network (Researcher -> Judge -> Storysmith) to generate a structured story context based on search and safety rules.
+4. **Context Injection**: The resulting story is injected into the Gemini Live session as a background "memory" trigger.
+5. **Immersive Entry**: The AI begins the narrative based on the agent-generated plot, greeting the user with voice and an initial illustration.
+
+### 3.4 Interactive Gameplay (Visual Feedback Loop)
+
+The application implements a unique "Stop-and-Watch" mechanism:
+- **Challenge Trigger**: The system instructions guide Gemini to ask for a physical action.
+- **Immediate Silence**: The model is instructed to stop speaking and wait after the request.
+- **Multimodal Verification**: Using the 1 FPS video feed and audio transcription, the "Live" model detects when the child has completed the action and said the magic word, then resumes the story with praise.
 
 ### 3.3 Media & Device Management
 
@@ -275,6 +284,9 @@ Instead of calling the Gemini Live API directly from the browser, we use a FastA
 
 ### React + Vite Single Page Application (SPA)
 The front end was migrated from Vanilla JS to a React SPA. This allows for more robust state management of the complex real-time media streams and tool calls, as well as a more responsive and premium UI.
+
+### Pre-story Agent Contextualization
+To provide high-quality and safe content, we separated story *generation* from story *delivery*. The ADK agent network performs research and safety checks asynchronously before the live conversation starts, ensuring the "Live" AI has a solid, well-researched narrative foundation.
 
 ### LoopAgent with EscalationChecker
 Rather than using a fixed number of research passes, the Judge's `output_schema` produces a structured `{ status: "pass"|"fail" }` verdict. The `EscalationChecker` reads this from session state and escalates the loop early when quality is sufficient (up to a safety cap of 3 iterations).
