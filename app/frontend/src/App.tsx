@@ -5,13 +5,19 @@ import { GeminiLiveAPI, FunctionCallDefinition } from './utils/geminilive';
 import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
 
 // --- ENV VARIABLES ---
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID;
-const PROXY_URL = import.meta.env.VITE_PROXY_URL;
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
+// Auto-detect proxy URL if it points to localhost or is missing (useful for Cloud Run)
+const rawProxyUrl = import.meta.env.VITE_PROXY_URL;
+const PROXY_URL = (!rawProxyUrl || rawProxyUrl.includes('localhost')) 
+  ? (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/proxy'
+  : rawProxyUrl;
+
 const MODEL_ID = import.meta.env.VITE_MODEL_ID;
 const MODEL_ID_IMAGE = import.meta.env.VITE_MODEL_ID_IMAGE;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-if (!PROJECT_ID || !PROXY_URL || !MODEL_ID || !MODEL_ID_IMAGE || !GEMINI_API_KEY) {
-  throw new Error('Missing required environment variables');
+
+if (!PROJECT_ID || !MODEL_ID || !MODEL_ID_IMAGE || !GEMINI_API_KEY) {
+  throw new Error('Missing required environment variables (PROJECT_ID, MODEL_ID, etc.)');
 }
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -45,34 +51,6 @@ class GenerateIllustrationTool extends FunctionCallDefinition {
     this.callback = callback;
   }
   functionToCall(parameters: any) { this.callback(parameters.prompt); }
-}
-
-class AwardBadgeTool extends FunctionCallDefinition {
-  callback: (badgeId: string) => void;
-  constructor(callback: (badgeId: string) => void) {
-    super(
-      "awardBadge",
-      "Awards a virtual badge.",
-      { type: "object", properties: { badgeId: { type: "string" } } },
-      ["badgeId"]
-    );
-    this.callback = callback;
-  }
-  functionToCall(parameters: any) { this.callback(parameters.badgeId); }
-}
-
-class ShowChoiceTool extends FunctionCallDefinition {
-  callback: (options: string[]) => void;
-  constructor(callback: (options: string[]) => void) {
-    super(
-      "showChoice",
-      "Displays multiple-choice buttons.",
-      { type: "object", properties: { options: { type: "array", items: { type: "string" } } } },
-      ["options"]
-    );
-    this.callback = callback;
-  }
-  functionToCall(parameters: any) { this.callback(parameters.options); }
 }
 
 const App: React.FC = () => {
@@ -260,8 +238,6 @@ const App: React.FC = () => {
         
         // Register Tools
         client.addFunction(new GenerateIllustrationTool((prompt: string) => generateNewIllustration(prompt)));
-        // client.addFunction(new AwardBadgeTool((badgeId: string) => handleAwardBadge(badgeId)));
-        // client.addFunction(new ShowChoiceTool((options: string[]) => setStoryChoices(options)));
 
         (client as any).onClose = () => {
             disconnect();
