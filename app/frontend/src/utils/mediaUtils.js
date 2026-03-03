@@ -80,7 +80,6 @@ class AudioStreamer {
       source.connect(this.audioWorklet);
 
       this.isStreaming = true;
-      console.log("🎤 Audio streaming started");
       return true;
     } catch (error) {
       console.error("Failed to start audio streaming:", error);
@@ -110,7 +109,6 @@ class AudioStreamer {
       this.mediaStream = null;
     }
 
-    console.log("🛑 Audio streaming stopped");
   }
 
   /**
@@ -322,7 +320,6 @@ class VideoStreamer extends BaseVideoCapture {
       this.isStreaming = true;
       this.startCapturing();
 
-      console.log("📹 Camera streaming started at", fps, "fps");
       return this.video; // Return video element for preview
     } catch (error) {
       console.error("Failed to start camera streaming:", error);
@@ -332,7 +329,6 @@ class VideoStreamer extends BaseVideoCapture {
 
   stop() {
     super.stop();
-    console.log("🛑 Camera streaming stopped");
   }
 }
 
@@ -377,11 +373,9 @@ class ScreenCapture extends BaseVideoCapture {
 
       // Handle stream end (user stops sharing)
       this.mediaStream.getVideoTracks()[0].onended = () => {
-        console.log("User stopped screen sharing");
         this.stop();
       };
 
-      console.log("🖥️ Screen capture started at", fps, "fps");
       return this.video; // Return video element for preview
     } catch (error) {
       console.error("Failed to start screen capture:", error);
@@ -391,7 +385,6 @@ class ScreenCapture extends BaseVideoCapture {
 
   stop() {
     super.stop();
-    console.log("🛑 Screen capture stopped");
   }
 }
 
@@ -441,7 +434,6 @@ class AudioPlayer {
       this.gainNode.connect(this.audioContext.destination);
 
       this.isInitialized = true;
-      console.log("🔊 Audio player initialized");
     } catch (error) {
       console.error("Failed to initialize audio player:", error);
       throw error;

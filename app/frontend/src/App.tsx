@@ -191,6 +191,49 @@ const App: React.FC = () => {
     liveClientRef.current?.sendTextMessage(`I choose: ${choice}`);
   };
 
+  const fetchStoryFromAgents = async (prompt: string) => {
+    try {
+      logDebug("Fetching magical story from agents...");
+      const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      const response = await fetch(`${backendUrl}/api/chat_stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt })
+      });
+
+      if (!response.body) return null;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.type === 'progress') {
+              logDebug(data.text);
+            } else if (data.type === 'result') {
+              fullText = data.text;
+            }
+          } catch (e) {
+            console.error("Error parsing SSE chunk", e);
+          }
+        }
+      }
+      return fullText;
+    } catch (err) {
+      logDebug("Failed to fetch story: " + err);
+      return null;
+    }
+  };
+
   const sendText = () => {
     if (!chatInput.trim() || !liveClientRef.current) return;
     appendChat("YOU", chatInput, "text");
@@ -235,10 +278,18 @@ const App: React.FC = () => {
                  appendChat("SYSTEM", "Setup Complete. Ready!", "system");
                  logDebug("Setup complete! Magic is starting.");
 
-                 setTimeout(() => {
+                 setTimeout(async () => {
                      if (liveClientRef.current) {
                          // TODO: Intercepting history from the content_builder agent
-                         liveClientRef.current.sendTextMessage("Start the magical fairy tale immediately. Introduce yourself as a magical storyteller and ask for my name.");
+                          const story = await fetchStoryFromAgents("Start a new magical adventure for a child. Be creative!");
+                          if (story) {
+                              appendChat("GEMINI", story, "text");
+                              appendChat("SYSTEM", "✨ Story history loaded!", "system");
+                              liveClientRef.current.sendTextMessage(`The Storysmith has prepared this adventure: \n\n${story}\n\n Please introduce yourself as a storyteller and begin this adventure based on the text above.`);
+                          } else {
+                              appendChat("SYSTEM", "⚠️ Agent failed, using fallback", "system");
+                              liveClientRef.current.sendTextMessage("Start the magical fairy tale immediately. Introduce yourself as a magical storyteller and ask for my name.");
+                          }
                          appendChat("SYSTEM", "Auto-starting story...", "system");
                      }
                  }, 500);

@@ -25,51 +25,36 @@ class MultimodalLiveResponseMessage {
     this.type = "";
     this.endOfTurn = false;
 
-    console.log("raw message data: ", data);
     this.endOfTurn = data?.serverContent?.turnComplete;
 
     const parts = data?.serverContent?.modelTurn?.parts;
 
     try {
       if (data?.setupComplete) {
-        console.log("🏁 SETUP COMPLETE response", data);
         this.type = MultimodalLiveResponseType.SETUP_COMPLETE;
       } else if (data?.serverContent?.turnComplete) {
-        console.log("🏁 TURN COMPLETE response");
         this.type = MultimodalLiveResponseType.TURN_COMPLETE;
       } else if (data?.serverContent?.interrupted) {
-        console.log("🗣️ INTERRUPTED response");
         this.type = MultimodalLiveResponseType.INTERRUPTED;
       } else if (data?.serverContent?.inputTranscription) {
-        console.log(
-          "📝 INPUT TRANSCRIPTION:",
-          data.serverContent.inputTranscription
-        );
         this.type = MultimodalLiveResponseType.INPUT_TRANSCRIPTION;
         this.data = {
           text: data.serverContent.inputTranscription.text || "",
           finished: data.serverContent.inputTranscription.finished || false,
         };
       } else if (data?.serverContent?.outputTranscription) {
-        console.log(
-          "📝 OUTPUT TRANSCRIPTION:",
-          data.serverContent.outputTranscription
-        );
         this.type = MultimodalLiveResponseType.OUTPUT_TRANSCRIPTION;
         this.data = {
           text: data.serverContent.outputTranscription.text || "",
           finished: data.serverContent.outputTranscription.finished || false,
         };
       } else if (data?.toolCall) {
-        console.log("🎯 🛠️ TOOL CALL response", data?.toolCall);
         this.type = MultimodalLiveResponseType.TOOL_CALL;
         this.data = data?.toolCall;
       } else if (parts?.length && parts[0].text) {
-        console.log("💬 TEXT response", parts[0].text);
         this.data = parts[0].text;
         this.type = MultimodalLiveResponseType.TEXT;
       } else if (parts?.length && parts[0].inlineData) {
-        console.log("🔊 AUDIO response");
         this.data = parts[0].inlineData.data;
         this.type = MultimodalLiveResponseType.AUDIO;
       }
@@ -91,7 +76,6 @@ class FunctionCallDefinition {
   }
 
   functionToCall(parameters) {
-    console.log("▶️Default function call");
   }
 
   getDefinition() {
@@ -100,16 +84,10 @@ class FunctionCallDefinition {
       description: this.description,
       parameters: { required: this.requiredParameters, ...this.parameters },
     };
-    console.log("created FunctionDefinition: ", definition);
     return definition;
   }
 
   runFunction(parameters) {
-    console.log(
-      `⚡ Running ${this.name} function with parameters: ${JSON.stringify(
-        parameters
-      )}`
-    );
     this.functionToCall(parameters);
   }
 }
@@ -159,19 +137,14 @@ class GeminiLiveAPI {
 
     // Default callbacks
     this.onReceiveResponse = (message) => {
-      console.log("Default message received callback", message);
     };
 
     this.onConnectionStarted = () => {
-      console.log("Default onConnectionStarted");
     };
 
     this.onErrorMessage = (message) => {
-      alert(message);
       this.connected = false;
     };
-
-    console.log("Created Gemini Live API object: ", this);
   }
 
   setProjectId(projectId) {
@@ -180,12 +153,10 @@ class GeminiLiveAPI {
   }
 
   setSystemInstructions(newSystemInstructions) {
-    console.log("setting system instructions: ", newSystemInstructions);
     this.systemInstructions = newSystemInstructions;
   }
 
   setGoogleGrounding(newGoogleGrounding) {
-    console.log("setting google grounding: ", newGoogleGrounding);
     this.googleGrounding = newGoogleGrounding;
   }
 
@@ -194,34 +165,28 @@ class GeminiLiveAPI {
   }
 
   setVoice(voiceName) {
-    console.log("setting voice: ", voiceName);
     this.voiceName = voiceName;
   }
 
   setProactivity(proactivity) {
-    console.log("setting proactivity: ", proactivity);
     this.proactivity = proactivity;
   }
 
   setInputAudioTranscription(enabled) {
-    console.log("setting input audio transcription: ", enabled);
     this.inputAudioTranscription = enabled;
   }
 
   setOutputAudioTranscription(enabled) {
-    console.log("setting output audio transcription: ", enabled);
     this.outputAudioTranscription = enabled;
   }
 
   setEnableFunctionCalls(enabled) {
-    console.log("setting enable function calls: ", enabled);
     this.enableFunctionCalls = enabled;
   }
 
   addFunction(newFunction) {
     this.functions.push(newFunction);
     this.functionsMap[newFunction.name] = newFunction;
-    console.log("added function: ", newFunction);
   }
 
   callFunction(functionName, parameters) {
@@ -241,38 +206,31 @@ class GeminiLiveAPI {
   }
 
   sendMessage(message) {
-    console.log("🟩 Sending message: ", message);
     if (this.webSocket && this.webSocket.readyState === WebSocket.OPEN) {
       this.webSocket.send(JSON.stringify(message));
     }
   }
 
   onReceiveMessage(messageEvent) {
-    console.log("Message received: ", messageEvent);
     const messageData = JSON.parse(messageEvent.data);
     const message = new MultimodalLiveResponseMessage(messageData);
     this.onReceiveResponse(message);
   }
 
   setupWebSocketToService() {
-    console.log("connecting: ", this.proxyUrl);
-
     this.webSocket = new WebSocket(this.proxyUrl);
 
     this.webSocket.onclose = (event) => {
-      console.log("websocket closed: ", event);
       this.connected = false;
       this.onErrorMessage("Connection closed");
     };
 
     this.webSocket.onerror = (event) => {
-      console.log("websocket error: ", event);
       this.connected = false;
       this.onErrorMessage("Connection error");
     };
 
     this.webSocket.onopen = (event) => {
-      console.log("websocket open: ", event);
       this.connected = true;
       this.totalBytesSent = 0;
       this.sendInitialSetupMessages();
@@ -283,7 +241,6 @@ class GeminiLiveAPI {
   }
 
   getFunctionDefinitions() {
-    console.log("🛠️ getFunctionDefinitions called");
     const tools = [];
 
     for (let index = 0; index < this.functions.length; index++) {
@@ -337,9 +294,6 @@ class GeminiLiveAPI {
     if (this.googleGrounding) {
       sessionSetupMessage.setup.tools.google_search = {};
       // Currently can't have both Google Search with custom tools.
-      console.log(
-        "Google Grounding enabled, removing custom function calls if any."
-      );
       delete sessionSetupMessage.setup.tools.function_declarations;
     }
 
@@ -351,7 +305,6 @@ class GeminiLiveAPI {
     // Store the setup message for later access
     this.lastSetupMessage = sessionSetupMessage;
 
-    console.log("sessionSetupMessage: ", sessionSetupMessage);
     this.sendMessage(sessionSetupMessage);
   }
 
@@ -377,7 +330,6 @@ class GeminiLiveAPI {
         response: response,
       },
     };
-    console.log("🔧 Sending tool response:", message);
     this.sendMessage(message);
   }
 
