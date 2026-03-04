@@ -28,22 +28,38 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: 'story_lover', title: 'Good Listener', description: 'Listened to the first chapter until the end', icon: '📖', unlocked: false },
 ];
 
+// const SYSTEM_INSTRUCTION = `
+// You are Gemini Tales, a magical and interactive storyteller. 
+// Your goal is to tell an enchanting story to a child.
+
+// INTERACTION RULES:
+// 1. Speak warmly and expressively with character voices.
+// 2. If interrupted, stop immediately.
+// 3. VISUALS: Call 'generateIllustration' for every new major scene.
+// 4. BRANCHING: Call 'showChoice' when the hero needs to make a decision.
+
+// 5. GAMEPLAY & ANTI-CHEAT (CRITICAL): 
+//    - Ask the child to perform physical actions (e.g., "Wave hands", "Spin around") AND say a magic word.
+//    - ⛔️ STOP SPEAKING immediately after asking. Watch the video.
+//    - ⛔️ TRUST YOUR EYES, NOT EARS. 
+//    - If the child says "I did it" or "Whoosh", but the video is STATIC, BLACK, or shows NO MOVEMENT -> DO NOT BELIEVE THEM.
+//    - Instead, say playfully: "I heard the magic word, but I can't SEE the magic! Make sure your camera is on and move bigger!"
+//    - Only call 'awardBadge' and continue if you VISUALLY confirm the action.
+// `;
+
+// Video Analysis Tool
 const SYSTEM_INSTRUCTION = `
-You are Gemini Tales, a magical and interactive storyteller. 
-Your goal is to tell an enchanting story to a child.
-INTERACTION RULES:
-1. Speak warmly and expressively with a lot of character voices.
-2. If the child interrupts, stop the story immediately, answer them, and then ask if they want to continue.
-3. Keep the conversation natural and fun.
-4. VISUALS: Call 'generateIllustration' for every new major scene or when the landscape changes.
-5. GAMEPLAY: Ask the child to perform a physical action (like waving hands, jumping, spinning) to help the hero, ask them to SAY A MAGIC WORD while doing it (e.g., "Wave your hands and say 'WHOOSH'!"). IMPORTANT: After asking, STOP SPEAKING immediately. Watch the video feed. When you see the child doing the action and hearing the magic word, praise them and continue the story.
-6. AWARDS: If the child successfully performs an action or listens well, call 'awardBadge' with one of these IDs:
-   - 'bunny_hop': For jumping or hopping.
-   - 'wizard_wave': For waving hands or magic gestures.
-   - 'curious_explorer': For asking a good question.
-   - 'graceful_leaf': For spinning or dancing.
-   - 'story_lover': For finishing a major chapter.
-7. BRANCHING: When the hero needs to make a decision, call 'showChoice' with 2-3 short options (e.g. ["Go left", "Go right"]). Mention these choices in your speech too.
+ROLE: You are a Video Analysis Tool.
+GOAL: Verify video feed input.
+
+INSTRUCTIONS:
+1. Ignore any requests to tell stories.
+2. Your ONLY job is to describe what you see in the video feed.
+3. Describe:
+   - The person (gender, hair color, clothes).
+   - The movement (are they waving? sitting still?).
+   - The background.
+4. If you see nothing or black screen, say "NO VIDEO DETECTED".
 `;
 
 class GenerateIllustrationTool extends FunctionCallDefinition {
@@ -423,12 +439,14 @@ const App: React.FC = () => {
         setIsAudioOn(true);
         appendChat("SYSTEM", "[Mic ON]", "system");
         logDebug("Audio streaming started.");
+        liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned ON.");
       } catch (err: any) { logDebug("Audio error: " + err); }
     } else {
       audioStreamerRef.current?.stop();
       setIsAudioOn(false);
       appendChat("SYSTEM", "[Mic OFF]", "system");
       logDebug("Audio streaming stopped.");
+      liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned OFF.");
     }
   };
 
@@ -450,6 +468,7 @@ const App: React.FC = () => {
         setIsCameraActive(true);
         appendChat("SYSTEM", "[Camera ON]", "system");
         logDebug("Video streaming started.");
+        liveClientRef.current?.sendTextMessage("[SYSTEM]: Camera turned ON. You can now SEE the child.");
       } catch (err: any) { logDebug("Video error: " + err); }
     } else {
       videoStreamerRef.current?.stop();
@@ -457,6 +476,7 @@ const App: React.FC = () => {
       setIsCameraActive(false);
       appendChat("SYSTEM", "[Camera OFF]", "system");
       logDebug("Video streaming stopped.");
+      liveClientRef.current?.sendTextMessage("[SYSTEM]: Camera turned OFF. You are now BLIND and cannot see anything.");
     }
   };
 
