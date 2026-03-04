@@ -8,9 +8,9 @@ import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
 const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
 // Auto-detect proxy URL if it points to localhost or is missing (useful for Cloud Run)
 const rawProxyUrl = import.meta.env.VITE_PROXY_URL;
-const PROXY_URL = (!rawProxyUrl || rawProxyUrl.includes('localhost')) 
-  ? (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/proxy'
-  : rawProxyUrl;
+const PROXY_URL = rawProxyUrl 
+  ? rawProxyUrl 
+  : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/proxy';
 
 const MODEL_ID = import.meta.env.VITE_MODEL_ID;
 const MODEL_ID_IMAGE = import.meta.env.VITE_MODEL_ID_IMAGE;
@@ -32,11 +32,18 @@ const SYSTEM_INSTRUCTION = `
 You are Gemini Tales, a magical and interactive storyteller. 
 Your goal is to tell an enchanting story to a child.
 INTERACTION RULES:
-1. Speak warmly and expressively.
+1. Speak warmly and expressively with a lot of character voices.
 2. If the child interrupts, stop the story immediately, answer them, and then ask if they want to continue.
 3. Keep the conversation natural and fun.
-4. VISUALS: Call 'generateIllustration' for every new major scene.
+4. VISUALS: Call 'generateIllustration' for every new major scene or when the landscape changes.
 5. GAMEPLAY: Ask the child to perform a physical action (like waving hands, jumping, spinning) to help the hero, ask them to SAY A MAGIC WORD while doing it (e.g., "Wave your hands and say 'WHOOSH'!"). IMPORTANT: After asking, STOP SPEAKING immediately. Watch the video feed. When you see the child doing the action and hearing the magic word, praise them and continue the story.
+6. AWARDS: If the child successfully performs an action or listens well, call 'awardBadge' with one of these IDs:
+   - 'bunny_hop': For jumping or hopping.
+   - 'wizard_wave': For waving hands or magic gestures.
+   - 'curious_explorer': For asking a good question.
+   - 'graceful_leaf': For spinning or dancing.
+   - 'story_lover': For finishing a major chapter.
+7. BRANCHING: When the hero needs to make a decision, call 'showChoice' with 2-3 short options (e.g. ["Go left", "Go right"]). Mention these choices in your speech too.
 `;
 
 class GenerateIllustrationTool extends FunctionCallDefinition {
@@ -51,6 +58,52 @@ class GenerateIllustrationTool extends FunctionCallDefinition {
     this.callback = callback;
   }
   functionToCall(parameters: any) { this.callback(parameters.prompt); }
+}
+
+class AwardBadgeTool extends FunctionCallDefinition {
+  callback: (badgeId: string) => void;
+  constructor(callback: (badgeId: string) => void) {
+    super(
+      "awardBadge",
+      "Awards a specific badge to the child.",
+      { 
+        type: "object", 
+        properties: { 
+          badgeId: { 
+            type: "string", 
+            enum: ['bunny_hop', 'wizard_wave', 'curious_explorer', 'graceful_leaf', 'story_lover'],
+            description: "The unique ID of the badge to award."
+          } 
+        } 
+      },
+      ["badgeId"]
+    );
+    this.callback = callback;
+  }
+  functionToCall(parameters: any) { this.callback(parameters.badgeId); }
+}
+
+class ShowChoiceTool extends FunctionCallDefinition {
+  callback: (options: string[]) => void;
+  constructor(callback: (options: string[]) => void) {
+    super(
+      "showChoice",
+      "Shows a set of choice buttons for the child to choose the next step in the story.",
+      { 
+        type: "object", 
+        properties: { 
+          options: { 
+            type: "array", 
+            items: { type: "string" },
+            description: "A list of 2-3 short choices for the child."
+          } 
+        } 
+      },
+      ["options"]
+    );
+    this.callback = callback;
+  }
+  functionToCall(parameters: any) { this.callback(parameters.options); }
 }
 
 const App: React.FC = () => {
@@ -226,7 +279,10 @@ const App: React.FC = () => {
     logDebug("Connecting to Gemini...");
 
     try {
+        console.log("Starting connection to:", PROXY_URL);
         const fullProxyUrl = `${PROXY_URL}?project=${PROJECT_ID}&model=${MODEL_ID}`;
+        logDebug(`Target URL: ${fullProxyUrl}`);
+        
         const client = new GeminiLiveAPI(fullProxyUrl, PROJECT_ID, MODEL_ID);
         liveClientRef.current = client;
 
@@ -238,10 +294,9 @@ const App: React.FC = () => {
         
         // Register Tools
         client.addFunction(new GenerateIllustrationTool((prompt: string) => generateNewIllustration(prompt)));
+        client.addFunction(new AwardBadgeTool((badgeId: string) => handleAwardBadge(badgeId)));
+        client.addFunction(new ShowChoiceTool((options: string[]) => setStoryChoices(options)));
 
-        (client as any).onClose = () => {
-            disconnect();
-        };
 
         client.onReceiveResponse = (message: any) => {
             if (!message || !message.type) return;
@@ -319,10 +374,16 @@ const App: React.FC = () => {
             }
         };
 
-        (client as any).onError = (err: any) => {
-            logDebug("Socket Error: " + err);
+        client.onErrorMessage = (err: any) => {
+            logDebug("Socket Error: " + JSON.stringify(err));
             setConnectionStatus('Error');
             setAppState('ERROR');
+            appendChat("SYSTEM", "Connection failed. Check backend!", "system");
+        };
+
+        client.onClose = () => {
+            logDebug("Socket Closed.");
+            disconnect();
         };
 
         client.connect();
@@ -530,6 +591,15 @@ const App: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* <div className="bg-yellow-50/50 p-4 rounded-2xl border border-yellow-100">
+                <h4 className="text-xs font-bold text-yellow-700 uppercase mb-3">🛠️ Simulate Tools (Debug)</h4>
+                <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => handleAwardBadge('bunny_hop')} className="bg-white border border-yellow-200 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-100 transition-all">Test 🐰 Badge</button>
+                    <button onClick={() => handleAwardBadge('wizard_wave')} className="bg-white border border-yellow-200 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-100 transition-all">Test 🪄 Badge</button>
+                    <button onClick={() => setStoryChoices(['Go to Cave', 'Stay at Camp'])} className="bg-white border border-yellow-200 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-100 transition-all col-span-2">Test Choices UI</button>
+                </div>
+            </div> */}
         </div>
 
         {/* Chat & Debug */}

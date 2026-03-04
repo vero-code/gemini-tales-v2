@@ -135,15 +135,21 @@ class GeminiLiveAPI {
     this.webSocket = null;
     this.lastSetupMessage = null; // Store the last setup message
 
-    // Default callbacks
+    /** @type {(message: MultimodalLiveResponseMessage) => void} */
     this.onReceiveResponse = (message) => {
     };
 
+    /** @type {() => void} */
     this.onConnectionStarted = () => {
     };
 
+    /** @type {(error: any) => void} */
     this.onErrorMessage = (message) => {
       this.connected = false;
+    };
+
+    /** @type {() => void} */
+    this.onClose = () => {
     };
   }
 
@@ -222,6 +228,7 @@ class GeminiLiveAPI {
 
     this.webSocket.onclose = (event) => {
       this.connected = false;
+      this.onClose();
       this.onErrorMessage("Connection closed");
     };
 
