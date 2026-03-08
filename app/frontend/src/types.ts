@@ -20,3 +20,5 @@ export const AppState = {
 } as const;
 
 export type AppState = typeof AppState[keyof typeof AppState];
+
+export type StoryMode = 'live' | 'agent';

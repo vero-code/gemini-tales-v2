@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import type { AppState, Achievement } from './types';
+import type { AppState, Achievement, StoryMode } from './types';
 import { GeminiLiveAPI, FunctionCallDefinition } from './utils/geminilive';
 import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
-import { SYSTEM_INSTRUCTION, INITIAL_ACHIEVEMENTS } from './config';
+import { SYSTEM_INSTRUCTION, AGENT_SYSTEM_INSTRUCTION, INITIAL_ACHIEVEMENTS } from './config';
+import { ModeSelector } from './components/ModeSelector';
+import { useAgentStory } from './hooks/useAgentStory';
 
 // --- ENV VARIABLES ---
 const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
@@ -93,6 +95,10 @@ const App: React.FC = () => {
   const [lastAwarded, setLastAwarded] = useState<Achievement | null>(null);
   const [storyChoices, setStoryChoices] = useState<string[]>([]);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+
+  // --- MODE STATE ---
+  const [storyMode, setStoryMode] = useState<StoryMode>('live');
+  const { fetchStory, storyText, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
 
   // --- DEV PANEL STATE ---
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
@@ -259,16 +265,16 @@ const App: React.FC = () => {
         console.log("Starting connection to:", PROXY_URL);
         const fullProxyUrl = `${PROXY_URL}?project=${PROJECT_ID}&model=${MODEL_ID}`;
         logDebug(`Target URL: ${fullProxyUrl}`);
-        
+
         const client = new GeminiLiveAPI(fullProxyUrl, PROJECT_ID, MODEL_ID);
         liveClientRef.current = client;
 
-        client.systemInstructions = SYSTEM_INSTRUCTION;
+        client.systemInstructions = storyMode === 'agent' ? AGENT_SYSTEM_INSTRUCTION : SYSTEM_INSTRUCTION;
         client.responseModalities = ["AUDIO"];
         client.voiceName = "Puck";
         client.inputAudioTranscription = true;
         client.outputAudioTranscription = true;
-        
+
         // Register Tools
         client.addFunction(new GenerateIllustrationTool((prompt: string) => generateNewIllustration(prompt)));
         client.addFunction(new AwardBadgeTool((badgeId: string) => handleAwardBadge(badgeId)));
@@ -288,22 +294,16 @@ const App: React.FC = () => {
 
                  setTimeout(async () => {
                      if (liveClientRef.current) {
-                         // TODO: Create 2 modes storytelling
-                        //   const story = await fetchStoryFromAgents("Start a new magical adventure for a child. Be creative!");
-                        //   if (story) {
-                        //       appendChat("GEMINI", story, "text");
-                        //       appendChat("SYSTEM", "✨ Story history loaded!", "system");
-                        //       liveClientRef.current.sendTextMessage(`The Storysmith has prepared this adventure: \n\n${story}\n\n Please introduce yourself as a storyteller and begin this adventure based on the text above.`);
-                        //   } else {
-                        //       appendChat("SYSTEM", "⚠️ Agent failed, using fallback", "system");
-                        //       liveClientRef.current.sendTextMessage("Start the magical fairy tale immediately. Introduce yourself as a magical storyteller and ask for my name.");
-                        //   }
-                        //  appendChat("SYSTEM", "Auto-starting story...", "system");
-
-                        const startMsg = "Start PHASE 1: Introduce yourself and ask me to turn on the camera. Do NOT start the story yet. Speak to me in English.";
-                         
+                         let startMsg: string;
+                         if (storyMode === 'agent' && storyText) {
+                           // Agent Mode: pass the pre-generated story and use agent system instruction
+                           startMsg = `The Storysmith has prepared this adventure for tonight:\n\n${storyText}\n\nPlease start the story NOW following your instructions. Introduce yourself as Puck and ask for the child's name, then begin Chapter 1.`;
+                         } else {
+                           // Live Mode: improvise
+                           startMsg = "Start PHASE 1: Introduce yourself and ask me to turn on the camera. Do NOT start the story yet. Speak to me in English.";
+                         }
                          liveClientRef.current.sendTextMessage(startMsg);
-                         appendChat("SYSTEM", "Starting Intro Sequence...", "system");
+                         appendChat("SYSTEM", `Starting in ${storyMode === 'agent' ? 'Agent' : 'Live'} Mode...`, "system");
                      }
                  }, 500);
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
@@ -395,6 +395,7 @@ const App: React.FC = () => {
     setIsCameraActive(false);
     setCurrentIllustration(null);
     setStoryChoices([]);
+    resetAgentStory();
     logDebug("Disconnected from Gemini.");
   };
 
@@ -544,10 +545,59 @@ const App: React.FC = () => {
         
         {/* Connection & Media Settings */}
         <div className="flex-1 flex flex-col gap-6">
+            {/* Mode Selector */}
+            <ModeSelector
+              selected={storyMode}
+              onChange={setStoryMode}
+              disabled={connectionStatus === 'Connected' || isAgentLoading}
+            />
+
+            {/* Agent Mode: Loading / Ready state */}
+            {storyMode === 'agent' && (
+              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
+                {isAgentLoading && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <p className="text-sm font-medium text-blue-700">{agentProgress || 'Preparing story...'}</p>
+                  </div>
+                )}
+                {!isAgentLoading && storyText && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold text-green-700 flex items-center gap-2">✨ Story ready!</p>
+                    <p className="text-xs text-gray-600 line-clamp-3 italic">{storyText.slice(0, 180)}...</p>
+                    <button
+                      onClick={connect}
+                      disabled={connectionStatus === 'Connected'}
+                      className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
+                    >
+                      🧚 Wake Puck!
+                    </button>
+                  </div>
+                )}
+                {!isAgentLoading && agentError && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold text-red-600">⚠️ {agentError}</p>
+                    <button onClick={() => fetchStory()} className="text-xs text-blue-600 underline">Try again</button>
+                  </div>
+                )}
+                {!isAgentLoading && !storyText && !agentError && (
+                  <button
+                    onClick={() => fetchStory()}
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md"
+                  >
+                    🚀 Generate Story with Agents
+                  </button>
+                )}
+              </div>
+            )}
+
             <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection & Media</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
                 <div className="flex gap-3 mb-4">
-                    <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
+                    {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
+                    {storyMode === 'live' && (
+                      <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
+                    )}
                     <button onClick={disconnect} disabled={connectionStatus !== 'Connected'} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
                 </div>
                 <div className="text-sm font-medium text-gray-600">
