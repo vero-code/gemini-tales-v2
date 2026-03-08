@@ -229,7 +229,6 @@ class GeminiLiveAPI {
     this.webSocket.onclose = (event) => {
       this.connected = false;
       this.onClose();
-      this.onErrorMessage("Connection closed");
     };
 
     this.webSocket.onerror = (event) => {
