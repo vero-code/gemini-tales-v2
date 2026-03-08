@@ -4,7 +4,7 @@
 ![Hackathon](https://img.shields.io/badge/hackathon-Gemini%20Live%20Agent%20Challenge-4285F4?style=flat-square&logo=google)
 ![IDE](https://img.shields.io/badge/IDE-Google%20Antigravity-673AB7?style=flat-square&logo=googlecloud)
 ![Cloud](https://img.shields.io/badge/deployed-Cloud%20Run-blue?style=flat-square&logo=googlecloud)
-![Version](https://img.shields.io/badge/version-v1.3.0-green?style=flat-square)
+![Version](https://img.shields.io/badge/version-v1.4.0-green?style=flat-square)
 
 > **Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child.**
 
@@ -34,9 +34,19 @@ Our backend uses the **Google Agent Development Kit (ADK)** and the **A2A (Agent
 
 | Agent | Architecture Highlights | Performance Config |
 |---|---|---|
-| **Adventure Seeker** | Multi-step reasoning for physical activity planning. | **Gemini 2.5 Flash** + Google Search. |
-| **Guardian of Balance** | Strict safety validation using Pydantic schemas. | **Gemini 2.5 Flash** (Temp 0.1). |
+| **Adventure Seeker** | Multi-step reasoning for physical activity planning. | **Gemini 3.1 Flash-Lite** + Grounding with Google Search. |
+| **Guardian of Balance** | Strict safety validation using Pydantic schemas. | **Gemini 3.1 Flash-Lite** (Temp 0.1). |
 | **Storysmith** | Advanced narrative weaving and character depth. | **Gemini 2.5 Pro** for literary quality. |
+
+---
+
+## ⚡ Optimization: Gemini 3.1 Flash-Lite
+
+We have upgraded our background agents (Researcher & Judge) to **Gemini 3.1 Flash-Lite** for the following reasons:
+- **Cost-Efficiency**: It is our most cost-efficient model for high-volume agentic traffic.
+- **Latency**: Optimized for low-latency, enabling faster pre-story generation.
+- **Reliability**: Improved instruction following is critical for the "Guardian of Balance" to strictly enforce safety schemas.
+- **Performance**: Matches 2.5 Flash quality while providing a more efficient migration path for complex workflows.
 
 ---
 
@@ -78,7 +88,7 @@ uv run app/main.py
 ## 🛠️ Tech Stack
 
 - **Frontend**: **React 19**, **Vite**, **TypeScript** (v1.1 Migration), and **Tailwind CSS**.
-- **Intelligence**: **Gemini 2.5 Flash/Pro** & **Gemini 3.1 Flash Preview** (Images).
+- **Intelligence**: **Gemini 3.1 Flash-Lite/Pro** & **Gemini 3.1 Flash Preview** (Images).
 - **Core Framework**: **Google ADK** & **Agent-to-Agent (A2A)** Protocol.
 - **Infrastructure**: **FastAPI** (Python 3.12), **WebSockets**, and **Google Cloud Run**.
 - **Observability**: **OpenTelemetry** with **Google Cloud Trace**.

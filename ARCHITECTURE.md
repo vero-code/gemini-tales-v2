@@ -53,7 +53,7 @@ graph TD
     
     subgraph "Google Cloud / AI Services"
         Proxy <-->|WebSocket| LiveAPI[Gemini Live API]
-        Storysmith -->|LLM Call| FlashPro[Gemini 2.5 Flash / Pro]
+        Storysmith -->|LLM Call| FlashPro[Gemini 3.1 Flash-Lite / Pro]
         Researcher -->|Search| GoogleSearch[Google Search API]
     end
     
@@ -139,8 +139,8 @@ The UI includes a robust device initialization flow (`fetchDevices`) that handle
 
 | Agent | Model | Key tools / output | ADK type |
 |---|---|---|---|
-| **Adventure Seeker** | `gemini-2.5-flash` | `google_search` | `Agent` |
-| **Guardian of Balance** | `gemini-2.5-flash` | Safety/Quality Evaluation | `Agent` |
+| **Adventure Seeker** | `gemini-3.1-flash-lite` | `google_search` | `Agent` |
+| **Guardian of Balance** | `gemini-3.1-flash-lite` | Safety/Quality Evaluation | `Agent` |
 | **Storysmith** | `gemini-2.5-pro` | High-fidelity narrative | `Agent` |
 | **Orchestrator** | — | A2A Coordination | `SequentialAgent` |
 
@@ -306,7 +306,7 @@ The Orchestrator saves agent outputs (`research_findings`, `judge_feedback`) int
 
 | Layer | Technology | Version |
 |---|---|---|
-| Large Language Model | Gemini 2.5 Flash / Pro | (Default: `gemini-2.5-flash`) |
+| Large Language Model | Gemini 3.1 Flash-Lite / Pro | (Default: `gemini-3.1-flash-lite`) |
 | Live Interaction | Gemini Live API | — |
 | Multi-agent framework | Google Agent Development Kit (ADK) | `1.22.0` |
 | Frontend | React + Vite + Tailwind CSS | — |
