@@ -36,17 +36,18 @@ Our backend uses the **Google Agent Development Kit (ADK)** and the **A2A (Agent
 |---|---|---|
 | **Adventure Seeker** | Multi-step reasoning for physical activity planning. | **Gemini 3.1 Flash-Lite** + Grounding with Google Search. |
 | **Guardian of Balance** | Strict safety validation using Pydantic schemas. | **Gemini 3.1 Flash-Lite** (Temp 0.1). |
-| **Storysmith** | Advanced narrative weaving and character depth. | **Gemini 2.5 Pro** for literary quality. |
+| **Storysmith** | Advanced narrative weaving and character depth. | **Gemini 3.1 Pro** for literary quality. |
 
 ---
 
-## ⚡ Optimization: Gemini 3.1 Flash-Lite
+## ⚡ Optimization: Gemini 3.1 Flash-Lite & Pro
 
-We have upgraded our background agents (Researcher & Judge) to **Gemini 3.1 Flash-Lite** for the following reasons:
-- **Cost-Efficiency**: It is our most cost-efficient model for high-volume agentic traffic.
-- **Latency**: Optimized for low-latency, enabling faster pre-story generation.
-- **Reliability**: Improved instruction following is critical for the "Guardian of Balance" to strictly enforce safety schemas.
-- **Performance**: Matches 2.5 Flash quality while providing a more efficient migration path for complex workflows.
+We have upgraded our agent network to the **Gemini 3.1** family:
+- **Storysmith (3.1 Pro)**: Enhanced reasoning and "Thinking" levels (Medium) for richer, more complex narratives and better agentic orchestration.
+- **Background Agents (3.1 Flash-Lite)**:
+    - **Cost-Efficiency**: Most cost-efficient for high-volume traffic.
+    - **Latency**: Low-latency for fast pre-story generation.
+    - **Reliability**: Improved instruction following for strict safety validation.
 
 ---
 

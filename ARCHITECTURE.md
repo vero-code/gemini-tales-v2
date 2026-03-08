@@ -53,7 +53,7 @@ graph TD
     
     subgraph "Google Cloud / AI Services"
         Proxy <-->|WebSocket| LiveAPI[Gemini Live API]
-        Storysmith -->|LLM Call| FlashPro[Gemini 3.1 Flash-Lite / Pro]
+        Storysmith -->|LLM Call| FlashPro[Gemini 3.1 Pro]
         Researcher -->|Search| GoogleSearch[Google Search API]
     end
     
@@ -141,7 +141,7 @@ The UI includes a robust device initialization flow (`fetchDevices`) that handle
 |---|---|---|---|
 | **Adventure Seeker** | `gemini-3.1-flash-lite` | `google_search` | `Agent` |
 | **Guardian of Balance** | `gemini-3.1-flash-lite` | Safety/Quality Evaluation | `Agent` |
-| **Storysmith** | `gemini-2.5-pro` | High-fidelity narrative | `Agent` |
+| **Storysmith** | `gemini-3.1-pro` | High-fidelity narrative | `Agent` |
 | **Orchestrator** | — | A2A Coordination | `SequentialAgent` |
 
 ### 4.2 Orchestration Logic
