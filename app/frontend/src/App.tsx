@@ -160,7 +160,10 @@ const App: React.FC = () => {
       const last = prev[prev.length - 1];
       if (last && last.sender === sender && type === 'transcript') {
         const newArr = [...prev];
-        newArr[newArr.length - 1].text += text;
+        newArr[newArr.length - 1] = {
+           ...last,
+           text: last.text + text
+        };
         return newArr;
       }
       return [...prev, { sender, text, type }];
