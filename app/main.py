@@ -309,21 +309,26 @@ async def gemini_live_proxy(websocket: WebSocket):
             async def client_to_server():
                 try:
                     while True:
-                        message = await websocket.receive()
+                        try:
+                            message = await websocket.receive()
+                            if message["type"] == "websocket.disconnect":
+                                break
+                        except Exception:
+                            break
+                            
                         if "text" in message:
                             text_data = message["text"]
                             if '"service_url"' in text_data:
-                                logger.info("🗑️ Dropped legacy 'service_url'")
+                                # logger.info("🗑️ Dropped legacy 'service_url'")
                                 continue
                             
                             text_data = text_data.replace('"generation_connfig"', '"generation_config"')
-                            
-                            logger.info(f"➡️ TO GOOGLE: {text_data[:500]}") 
                             await server_websocket.send(text_data)
                         elif "bytes" in message:
                             await server_websocket.send(message["bytes"])
                 except Exception as e:
-                    logger.error(f"❌ C->S error: {e}")
+                    if "closed" not in str(e).lower():
+                        logger.error(f"❌ C->S error: {e}")
 
             # Channel: Google -> Browser
             async def server_to_client():
@@ -332,34 +337,33 @@ async def gemini_live_proxy(websocket: WebSocket):
                         if isinstance(message, bytes):
                             try:
                                 decoded_msg = message.decode('utf-8')
-                                logger.info(f"⬅️ FROM GOOGLE (decoded): {decoded_msg[:500]}")
+                                # logger.info(f"⬅️ FROM GOOGLE (decoded): {decoded_msg[:100]}...")
                                 await websocket.send_text(decoded_msg)
                             except UnicodeDecodeError:
-                                logger.info(f"⬅️ FROM GOOGLE (binary data, len: {len(message)})")
                                 await websocket.send_bytes(message)
                         else:
-                            logger.info(f"⬅️ FROM GOOGLE (text): {message[:500]}")
                             await websocket.send_text(message)
                 except Exception as e:
-                    logger.error(f"❌ S->C error: {e}")
+                    if "closed" not in str(e).lower():
+                        logger.error(f"❌ S->C error: {e}")
 
-            pump_tasks = [
-                asyncio.create_task(client_to_server()),
-                asyncio.create_task(server_to_client())
-            ]
-            
+            # Run both concurrently, but ensure both terminate if one does
             done, pending = await asyncio.wait(
-                pump_tasks, return_when=asyncio.FIRST_COMPLETED
+                [asyncio.create_task(client_to_server()), asyncio.create_task(server_to_client())],
+                return_when=asyncio.FIRST_COMPLETED,
             )
             
             for task in pending:
                 task.cancel()
 
     except Exception as e:
-        logger.error(f"Proxy error: {e}")
+        if "closed" not in str(e).lower():
+            logger.error(f"Proxy error: {e}")
     finally:
         if server_websocket:
-            logger.error(f"⚠️ Google Closed Connection! Code: {server_websocket.close_code}, Reason: {server_websocket.close_reason}")
+            code = getattr(server_websocket, 'close_code', 'Unknown')
+            reason = getattr(server_websocket, 'close_reason', 'No reason')
+            logger.info(f"🔌 Proxy connection closed. Google side: {code} ({reason})")
             try:
                 await server_websocket.close()
             except Exception:

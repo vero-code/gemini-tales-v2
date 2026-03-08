@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import type { AppState, Achievement } from './types';
 import { GeminiLiveAPI, FunctionCallDefinition } from './utils/geminilive';
 import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
+import { SYSTEM_INSTRUCTION, INITIAL_ACHIEVEMENTS } from './config';
 
 // --- ENV VARIABLES ---
 const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
@@ -20,47 +21,7 @@ if (!PROJECT_ID || !MODEL_ID || !MODEL_ID_IMAGE || !GEMINI_API_KEY) {
   throw new Error('Missing required environment variables (PROJECT_ID, MODEL_ID, etc.)');
 }
 
-const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: 'bunny_hop', title: 'Hop-Skip', description: 'Hopped around like a real bunny', icon: '🐰', unlocked: false },
-  { id: 'wizard_wave', title: 'Young Wizard', description: 'Waved your hands like a magician', icon: '🪄', unlocked: false },
-  { id: 'curious_explorer', title: 'Little Inquirer', description: 'Asked an interesting question about the story', icon: '❓', unlocked: false },
-  { id: 'graceful_leaf', title: 'Little Leaf', description: 'Twirled around like an autumn leaf', icon: '🍃', unlocked: false },
-  { id: 'story_lover', title: 'Good Listener', description: 'Listened to the first chapter until the end', icon: '📖', unlocked: false },
-];
 
-// const SYSTEM_INSTRUCTION = `
-// You are Gemini Tales, a magical and interactive storyteller. 
-// Your goal is to tell an enchanting story to a child.
-
-// INTERACTION RULES:
-// 1. Speak warmly and expressively with character voices.
-// 2. If interrupted, stop immediately.
-// 3. VISUALS: Call 'generateIllustration' for every new major scene.
-// 4. BRANCHING: Call 'showChoice' when the hero needs to make a decision.
-
-// 5. GAMEPLAY & ANTI-CHEAT (CRITICAL): 
-//    - Ask the child to perform physical actions (e.g., "Wave hands", "Spin around") AND say a magic word.
-//    - ⛔️ STOP SPEAKING immediately after asking. Watch the video.
-//    - ⛔️ TRUST YOUR EYES, NOT EARS. 
-//    - If the child says "I did it" or "Whoosh", but the video is STATIC, BLACK, or shows NO MOVEMENT -> DO NOT BELIEVE THEM.
-//    - Instead, say playfully: "I heard the magic word, but I can't SEE the magic! Make sure your camera is on and move bigger!"
-//    - Only call 'awardBadge' and continue if you VISUALLY confirm the action.
-// `;
-
-// Video Analysis Tool
-const SYSTEM_INSTRUCTION = `
-ROLE: You are a Video Analysis Tool.
-GOAL: Verify video feed input.
-
-INSTRUCTIONS:
-1. Ignore any requests to tell stories.
-2. Your ONLY job is to describe what you see in the video feed.
-3. Describe:
-   - The person (gender, hair color, clothes).
-   - The movement (are they waving? sitting still?).
-   - The background.
-4. If you see nothing or black screen, say "NO VIDEO DETECTED".
-`;
 
 class GenerateIllustrationTool extends FunctionCallDefinition {
   callback: (prompt: string) => void;
@@ -327,17 +288,22 @@ const App: React.FC = () => {
 
                  setTimeout(async () => {
                      if (liveClientRef.current) {
-                         // TODO: Intercepting history from the content_builder agent
-                          const story = await fetchStoryFromAgents("Start a new magical adventure for a child. Be creative!");
-                          if (story) {
-                              appendChat("GEMINI", story, "text");
-                              appendChat("SYSTEM", "✨ Story history loaded!", "system");
-                              liveClientRef.current.sendTextMessage(`The Storysmith has prepared this adventure: \n\n${story}\n\n Please introduce yourself as a storyteller and begin this adventure based on the text above.`);
-                          } else {
-                              appendChat("SYSTEM", "⚠️ Agent failed, using fallback", "system");
-                              liveClientRef.current.sendTextMessage("Start the magical fairy tale immediately. Introduce yourself as a magical storyteller and ask for my name.");
-                          }
-                         appendChat("SYSTEM", "Auto-starting story...", "system");
+                         // TODO: Create 2 modes storytelling
+                        //   const story = await fetchStoryFromAgents("Start a new magical adventure for a child. Be creative!");
+                        //   if (story) {
+                        //       appendChat("GEMINI", story, "text");
+                        //       appendChat("SYSTEM", "✨ Story history loaded!", "system");
+                        //       liveClientRef.current.sendTextMessage(`The Storysmith has prepared this adventure: \n\n${story}\n\n Please introduce yourself as a storyteller and begin this adventure based on the text above.`);
+                        //   } else {
+                        //       appendChat("SYSTEM", "⚠️ Agent failed, using fallback", "system");
+                        //       liveClientRef.current.sendTextMessage("Start the magical fairy tale immediately. Introduce yourself as a magical storyteller and ask for my name.");
+                        //   }
+                        //  appendChat("SYSTEM", "Auto-starting story...", "system");
+
+                        const startMsg = "Start PHASE 1: Introduce yourself and ask me to turn on the camera. Do NOT start the story yet. Speak to me in English.";
+                         
+                         liveClientRef.current.sendTextMessage(startMsg);
+                         appendChat("SYSTEM", "Starting Intro Sequence...", "system");
                      }
                  }, 500);
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
@@ -365,6 +331,7 @@ const App: React.FC = () => {
                 functionCalls.forEach((fc: any) => {
                    logDebug(`Calling tool: ${fc.name}`);
                    
+                   let resultMsg = "Success";
                    if (fc.name === 'generateIllustration') {
                        generateNewIllustration(fc.args.prompt);
                    } else if (fc.name === 'awardBadge') {
@@ -379,11 +346,12 @@ const App: React.FC = () => {
                                function_responses: [
                                    {
                                        id: fc.id,
-                                       response: { result: "Success" }
+                                       response: { result: resultMsg }
                                    }
                                ]
                            }
                        };
+                       logDebug(`📤 Sending tool response for ${fc.name}...`);
                        liveClientRef.current.sendMessage(correctPayload);
                    }
                 });
@@ -439,14 +407,14 @@ const App: React.FC = () => {
         setIsAudioOn(true);
         appendChat("SYSTEM", "[Mic ON]", "system");
         logDebug("Audio streaming started.");
-        liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned ON.");
+        // liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned ON.");
       } catch (err: any) { logDebug("Audio error: " + err); }
     } else {
       audioStreamerRef.current?.stop();
       setIsAudioOn(false);
       appendChat("SYSTEM", "[Mic OFF]", "system");
       logDebug("Audio streaming stopped.");
-      liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned OFF.");
+      // liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned OFF.");
     }
   };
 
@@ -468,7 +436,7 @@ const App: React.FC = () => {
         setIsCameraActive(true);
         appendChat("SYSTEM", "[Camera ON]", "system");
         logDebug("Video streaming started.");
-        liveClientRef.current?.sendTextMessage("[SYSTEM]: Camera turned ON. You can now SEE the child.");
+        liveClientRef.current?.sendTextMessage("[SYSTEM]: Mirror is now ON. You can SEE clearly.");
       } catch (err: any) { logDebug("Video error: " + err); }
     } else {
       videoStreamerRef.current?.stop();
@@ -476,7 +444,7 @@ const App: React.FC = () => {
       setIsCameraActive(false);
       appendChat("SYSTEM", "[Camera OFF]", "system");
       logDebug("Video streaming stopped.");
-      liveClientRef.current?.sendTextMessage("[SYSTEM]: Camera turned OFF. You are now BLIND and cannot see anything.");
+      liveClientRef.current?.sendTextMessage("[SYSTEM]: Mirror is now DARK. You are BLIND. Acknowledge and continue.");
     }
   };
 
@@ -514,7 +482,7 @@ const App: React.FC = () => {
                   {appState === 'IDLE' ? (
                     <div className="text-gray-400 font-medium">Connect and start media below to begin the magic.</div>
                   ) : (
-                    <div className="flex flex-col items-center gap-6">
+                  <div className="flex flex-col items-center gap-6">
                       <div className="w-20 h-20 border-8 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                       <p className="text-purple-600 text-xl font-black">Story is active...</p>
                     </div>
