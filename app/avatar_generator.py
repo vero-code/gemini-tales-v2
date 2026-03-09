@@ -87,6 +87,51 @@ The white background is essential for character compositing."""
         logger.info(f"✓ Portrait generated at {portrait_path}")
         return portrait_path
 
+    def generate_avatar_from_photo(self, photo_bytes: bytes, appearance_description: str) -> str:
+        """
+        Transforms a real photo into a stylized fairytale portrait.
+        
+        Args:
+            photo_bytes: The raw bytes of the user's photo.
+            appearance_description: Text context (e.g., name or color preferences).
+            
+        Returns:
+            Path to the saved stylized portrait.
+        """
+        prompt = f"""Transform this person into a stylized fairytale character portrait.
+
+Character details: {appearance_description}
+
+PRESERVE from the original photo:
+- The person's facial features, face shape, and likeness
+- Their general expression and personality
+- Any distinctive features (glasses, etc.)
+
+TRANSFORM with this style:
+- Art style: Watercolor, whimsical children's book illustration
+- Soft textures, gentle brushstrokes, and a warm color palette
+- Background: Pure solid white (#FFFFFF) - absolutely no gradients or patterns
+- Frame: Head and shoulders, 3/4 view
+- Lighting: Soft, magical glow
+- Art style: Modern animated movie character (Pixar/Dreamworks aesthetic)
+
+The result should be clearly recognizable as THIS specific person, but illustrated as a magical fairytale character."""
+
+        logger.info("🎨 Transforming photo into a fairytale portrait...")
+        
+        # Send both the prompt AND the image
+        response = self.chat.send_message([
+            prompt,
+            types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg")
+        ])
+        
+        portrait_path = self._save_image_from_response(response, "portrait.png")
+        if not portrait_path:
+            raise Exception("Failed to transform photo - no image in response")
+        
+        logger.info(f"✓ Photo-based portrait generated at {portrait_path}")
+        return portrait_path
+
     def generate_consistent_action(self, action_description: str) -> str:
         """
         Generates the same character performing a new action.

@@ -170,6 +170,24 @@ def get_generator(user_id: str) -> StoryAvatarGenerator:
         generators[user_id] = StoryAvatarGenerator()
     return generators[user_id]
 
+from fastapi import FastAPI, WebSocket, UploadFile, File, Form
+
+@app.post("/api/avatar/from-photo")
+async def avatar_from_photo(
+    file: UploadFile = File(...),
+    description: str = Form("a magical character"),
+    user_id: str = Form("test_user")
+):
+    generator = get_generator(user_id)
+    photo_bytes = await file.read()
+    
+    loop = asyncio.get_event_loop()
+    # Processing image is intensive
+    path = await loop.run_in_executor(None, generator.generate_avatar_from_photo, photo_bytes, description)
+    
+    url_path = f"/avatars/{os.path.basename(path)}?t={int(asyncio.get_event_loop().time())}"
+    return {"path": url_path}
+
 @app.post("/api/avatar/create")
 async def create_avatar(request: AvatarRequest):
     generator = get_generator(request.user_id)

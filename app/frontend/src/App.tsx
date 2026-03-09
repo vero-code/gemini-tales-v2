@@ -122,6 +122,7 @@ const App: React.FC = () => {
 
   // --- REFS ---
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const storyContainerRef = useRef<HTMLDivElement>(null);
   
@@ -246,6 +247,38 @@ const App: React.FC = () => {
       }
     } catch (err) {
       logDebug("Failed to create avatar: " + err);
+    } finally {
+      setIsGeneratingAvatar(false);
+    }
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    setIsGeneratingAvatar(true);
+    setAvatarUrl(null);
+    setActionUrl(null);
+    logDebug("📸 Transforming your photo into a character...");
+    
+    try {
+      const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('description', characterDescription);
+      
+      const response = await fetch(`${backendUrl}/api/avatar/from-photo`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      if (data.path) {
+        const fullPath = backendUrl + data.path;
+        setAvatarUrl(fullPath);
+        setCurrentIllustration(fullPath);
+        logDebug("✓ Magic photo transformation complete!");
+      }
+    } catch (err) {
+      logDebug("Photo transform failed: " + err);
     } finally {
       setIsGeneratingAvatar(false);
     }
@@ -718,6 +751,23 @@ const App: React.FC = () => {
                                 </span>
                             ) : "🎨 Create Fairytale Avatar"}
                         </button>
+                        
+                        <div className="flex gap-2">
+                           <button 
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isGeneratingAvatar}
+                              className="flex-1 py-2 rounded-xl font-bold text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-all border border-indigo-200"
+                           >
+                              📂 Upload Photo
+                           </button>
+                           <input 
+                              type="file" 
+                              ref={fileInputRef} 
+                              className="hidden" 
+                              accept="image/*" 
+                              onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} 
+                           />
+                        </div>
                     </div>
 
                     {avatarUrl && (
