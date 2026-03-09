@@ -7,40 +7,27 @@
 ## Table of Contents
 
 1. [High-level Overview](#1-high-level-overview)
-2. [Repository Layout](#2-repository-layout)
-3. [Subsystem A — Live Storytelling (Frontend)](#3-subsystem-a--live-storytelling-frontend)
-   - [Component Map](#31-component-map)
-   - [State Machine](#32-state-machine)
-   - [Live API Session Lifecycle](#33-live-api-session-lifecycle)
-   - [Tool-call Protocol](#34-tool-call-protocol)
-   - [Audio Pipeline](#35-audio-pipeline)
-   - [Camera Pipeline](#36-camera-pipeline)
-4. [Subsystem B — Multi-agent Story Engine (Backend)](#4-subsystem-b--multi-agent-story-engine-backend)
-   - [Agent Roles](#41-agent-roles)
-   - [Orchestration Logic](#42-orchestration-logic)
-   - [A2A Communication](#43-a2a-communication)
-   - [FastAPI Proxy Layer](#44-fastapi-proxy-layer)
-5. [Data Flows](#5-data-flows)
-   - [Live Storytelling End-to-End](#51-live-storytelling-end-to-end)
-   - [Multi-agent Story Engine End-to-End](#52-multi-agent-story-engine-end-to-end)
-6. [Service Topology & Ports](#6-service-topology--ports)
-7. [Deployment](#7-deployment)
-8. [Key Design Decisions](#8-key-design-decisions)
-9. [Tech Stack Summary](#9-tech-stack-summary)
+2. [Storytelling Modes](#2-storytelling-modes)
+3. [Repository Layout](#3-repository-layout)
+4. [Subsystem A — Dynamic Interaction (Frontend)](#4-subsystem-a--dynamic-interaction-frontend)
+5. [Subsystem B — Multi-agent Story Engine (Backend)](#5-subsystem-b--multi-agent-story-engine-backend)
+6. [Data Flows](#6-data-flows)
+7. [Service Topology & Ports](#7-service-topology--ports)
+8. [Deployment](#8-deployment)
+9. [Key Design Decisions](#9-key-design-decisions)
+10. [Tech Stack Summary](#10-tech-stack-summary)
 
 ---
 
 ## 1. High-level Overview
 
-Gemini Tales is an integrated AI storytelling system built on the Google Agent Development Kit (ADK). It allows users to generate interactive stories based on any topic.
+Gemini Tales is an integrated AI storytelling system built on the Google Agent Development Kit (ADK). It allows users to generate interactive stories through two distinct pathways: **Live** and **Agent-driven**.
 
 | Component | Responsibility | Primary Technology |
 |---|---|---|
-| **Frontend** | Modern, interactive UI for story generation and live storytelling | React / Vite / Tailwind CSS |
+| **Frontend** | Modern UI for mode selection and interactive storytelling | React / Vite / Tailwind CSS |
 | **API Layer** | WebSocket Proxy & Static File Host | Python / FastAPI / Uvicorn |
 | **Story Engine** | Multi-agent pipeline for research and writing | Google ADK / A2A Protocol |
-
-The system is deployed as a suite of microservices: a main FastAPI server serves the frontend and exposes the chat API, while four independent agents handle the processing logic.
 
 ```mermaid
 graph TD
@@ -52,7 +39,7 @@ graph TD
     end
     
     subgraph "Google Cloud / AI Services"
-        Proxy <-->|WebSocket| LiveAPI[Gemini Live API]
+        Proxy <-->|WebSocket| LiveAPI[Gemini Live 2.5 Flash]
         Storysmith -->|LLM Call| FlashPro[Gemini 3.1 Pro]
         Researcher -->|Search| GoogleSearch[Google Search API]
     end
@@ -72,7 +59,26 @@ graph TD
 
 ---
 
-## 2. Repository Layout
+## 2. Storytelling Modes
+
+Gemini Tales now supports two core experiences, toggled via the UI.
+
+### 2.1 Live Mode (Spontaneous)
+In **Live Mode**, the system uses the native `Gemini Live` capabilities for an unscripted, highly interactive session. 
+- **Latency**: Near-zero.
+- **Narrative**: Emerges directly from the child's input.
+- **Visuals**: Triggered by tool-calls during the live conversation.
+
+### 2.2 Agent Mode (Structured)
+In **Agent Mode**, the multi-agent backend pre-generates a story foundation before the live session begins.
+1. **Research**: Adventure Seeker scouts facts/legends.
+2. **Review**: Guardian of Balance ensures safety and physical activity density.
+3. **Writing**: Storysmith weaves a Markdown-based epic.
+4. **Narration**: The pre-generated text is injected into the Gemini Live session, where Puck (the AI avatar) narrates it with expressive character voices.
+
+---
+
+## 3. Repository Layout
 
 ```
 gemini-tales/
@@ -101,7 +107,7 @@ gemini-tales/
 
 ---
 
-## 3. Subsystem A — Interactive Story UI (Frontend)
+## 4. Subsystem A — Interactive Story UI (Frontend)
 
 The frontend is a high-performance web interface migrated to **TypeScript** for enhanced stability. It orchestrates a unified multimodal stream.
 
@@ -133,7 +139,7 @@ The UI includes a robust device initialization flow (`fetchDevices`) that handle
 
 ---
 
-## 4. Subsystem B — Multi-agent Story Engine (Backend)
+## 5. Subsystem B — Multi-agent Story Engine (Backend)
 
 ### 4.1 Agent Roles
 
@@ -196,7 +202,7 @@ Orchestrator
 
 ---
 
-## 5. Data Flows
+## 6. Data Flows
 
 ### 5.1 Real-time Storytelling Flow (WebSocket)
 
@@ -230,7 +236,7 @@ The ADK agents are still utilized by the `content_builder` during specific story
 
 ---
 
-## 6. Service Topology & Ports
+## 7. Service Topology & Ports
 
 | Service | Port | Technology | Start command |
 |---|---|---|---|
@@ -244,7 +250,7 @@ All services are started in the correct order by `run_local.ps1`. A 5-second sle
 
 ---
 
-## 7. Deployment
+## 8. Deployment
 
 All five services are containerised with individual `Dockerfile`s and deployed to **Google Cloud Run** via `deploy.ps1`.
 
@@ -277,7 +283,7 @@ The `course-creator` (App) Cloud Run service is publicly accessible. The four ag
 
 ---
 
-## 8. Key Design Decisions
+## 9. Key Design Decisions
 
 ### Proxied WebSocket Communication
 Instead of calling the Gemini Live API directly from the browser, we use a FastAPI WebSocket proxy. This ensures that the **Vertex AI credentials** and **Project ID** remain secure on the server, while still providing a low-latency pipe for audio and video data.
@@ -302,12 +308,12 @@ The Orchestrator saves agent outputs (`research_findings`, `judge_feedback`) int
 
 ---
 
-## 9. Tech Stack Summary
+## 10. Tech Stack Summary
 
 | Layer | Technology | Version |
 |---|---|---|
-| Large Language Model | Gemini 3.1 Flash-Lite / Pro | (Default: `gemini-3.1-flash-lite`) |
-| Live Interaction | Gemini Live API | — |
+| Large Language Model | Gemini 3.1 Flash-Lite / Pro | (Default: `3.1-flash-lite`) |
+| Live Interaction | Gemini Live 2.5 Flash | — |
 | Multi-agent framework | Google Agent Development Kit (ADK) | `1.22.0` |
 | Frontend | React + Vite + Tailwind CSS | — |
 | Backend | FastAPI + Uvicorn | `0.123.*` |
