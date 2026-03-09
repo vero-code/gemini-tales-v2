@@ -11,11 +11,12 @@
 3. [Repository Layout](#3-repository-layout)
 4. [Subsystem A — Dynamic Interaction (Frontend)](#4-subsystem-a--dynamic-interaction-frontend)
 5. [Subsystem B — Multi-agent Story Engine (Backend)](#5-subsystem-b--multi-agent-story-engine-backend)
-6. [Data Flows](#6-data-flows)
-7. [Service Topology & Ports](#7-service-topology--ports)
-8. [Deployment](#8-deployment)
-9. [Key Design Decisions](#9-key-design-decisions)
-10. [Tech Stack Summary](#10-tech-stack-summary)
+6. [Subsystem C — Character Workshop](#6-subsystem-c--character-workshop)
+7. [Data Flows](#7-data-flows)
+8. [Service Topology & Ports](#8-service-topology--ports)
+9. [Deployment](#9-deployment)
+10. [Key Design Decisions](#10-key-design-decisions)
+11. [Tech Stack Summary](#11-tech-stack-summary)
 
 ---
 
@@ -202,7 +203,28 @@ Orchestrator
 
 ---
 
-## 6. Data Flows
+## 6. Subsystem C — Character Workshop
+
+The **Character Workshop** is a dedicated module for creating consistent character visuals that persist across story scenes, powered by **Gemini 2.5 Flash-Image**.
+
+### 6.1 Multi-turn Consistency Logic
+
+To solve the "same face" problem common in AI generation, we use a stateful chat session:
+1. **Initial Portrait**: The user provides a text description (e.g., "girl with red pigtails"). Gemini generates a base watercolor portrait.
+2. **Session Persistence**: The `StoryAvatarGenerator` maintains an active `ChatSession` with the model.
+3. **Action Mapping**: When the user requests an action (e.g., "casting a spell"), the specific instruction is sent *inside* the same chat session.
+4. **Contextual Awareness**: Because the model "remembers" its previous output (the portrait), it maintains the child's likeness, hair, and clothing in the new action pose.
+
+### 6.2 Photo-to-Avatar Transformation
+
+The system supports a multimodal "likeness transfer" flow:
+- **Input**: A real photo (JPEG/PNG) and a fairytale style prompt.
+- **Multimodal Prompt**: The backend sends both the image bytes and the prompt to the multimodal model.
+- **Stylization**: Gemini analyzes the facial features (glasses, smile, face shape) and "repaints" them into the whimsical watercolor aesthetic while preserving the user's likeness.
+
+---
+
+## 7. Data Flows
 
 ### 5.1 Real-time Storytelling Flow (WebSocket)
 
@@ -236,7 +258,7 @@ The ADK agents are still utilized by the `content_builder` during specific story
 
 ---
 
-## 7. Service Topology & Ports
+## 8. Service Topology & Ports
 
 | Service | Port | Technology | Start command |
 |---|---|---|---|
@@ -250,7 +272,7 @@ All services are started in the correct order by `run_local.ps1`. A 5-second sle
 
 ---
 
-## 8. Deployment
+## 9. Deployment
 
 All five services are containerised with individual `Dockerfile`s and deployed to **Google Cloud Run** via `deploy.ps1`.
 
@@ -283,7 +305,7 @@ The `course-creator` (App) Cloud Run service is publicly accessible. The four ag
 
 ---
 
-## 9. Key Design Decisions
+## 10. Key Design Decisions
 
 ### Proxied WebSocket Communication
 Instead of calling the Gemini Live API directly from the browser, we use a FastAPI WebSocket proxy. This ensures that the **Vertex AI credentials** and **Project ID** remain secure on the server, while still providing a low-latency pipe for audio and video data.
@@ -308,7 +330,7 @@ The Orchestrator saves agent outputs (`research_findings`, `judge_feedback`) int
 
 ---
 
-## 10. Tech Stack Summary
+## 11. Tech Stack Summary
 
 | Layer | Technology | Version |
 |---|---|---|

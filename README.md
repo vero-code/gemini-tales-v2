@@ -4,7 +4,7 @@
 ![Hackathon](https://img.shields.io/badge/hackathon-Gemini%20Live%20Agent%20Challenge-4285F4?style=flat-square&logo=google)
 ![IDE](https://img.shields.io/badge/IDE-Google%20Antigravity-673AB7?style=flat-square&logo=googlecloud)
 ![Cloud](https://img.shields.io/badge/deployed-Cloud%20Run-blue?style=flat-square&logo=googlecloud)
-![Version](https://img.shields.io/badge/version-v1.5.0-green?style=flat-square)
+![Version](https://img.shields.io/badge/version-v1.6.0-green?style=flat-square)
 
 > **Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child.**
 
@@ -32,6 +32,7 @@ The frontend is a direct bridge to **Gemini 2.5 Flash Native Audio**, allowing f
 | 🎙️ **Stable Voice Live** | Interruption-aware, low-latency conversation (2.5 Flash Native Audio). |
 | 📸 **Visual Awareness** | Real-time video stream (1 FPS) allows the AI to "see" costumes, toys, and movements. |
 | 🎨 **Dynamic Illustrations** | Powered by **Gemini 3.1 Flash**, generating watercolor-style art that evolves with the plot. |
+| ✨ **Character Workshop** | Create consistent fairytale avatars via text or **photo-to-avatar** transformation using **Gemini 2.5 Flash-Image**. |
 | ⚡ **Agent-Driven Context** | In Agent Mode, the **Storysmith** network researches and crafts a unique plot foundation before the curtain rises. |
 | 🎮 **Interactive Challenges** | The AI pauses the story for "Hero's Challenges," requiring physical actions (jumping, waving) detected via video feed. |
 
