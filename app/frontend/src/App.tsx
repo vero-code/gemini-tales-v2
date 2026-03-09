@@ -95,6 +95,7 @@ const App: React.FC = () => {
   const [lastAwarded, setLastAwarded] = useState<Achievement | null>(null);
   const [storyChoices, setStoryChoices] = useState<string[]>([]);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [accumulatedStory, setAccumulatedStory] = useState('');
 
   // --- MODE STATE ---
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
@@ -115,6 +116,7 @@ const App: React.FC = () => {
   // --- REFS ---
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const storyContainerRef = useRef<HTMLDivElement>(null);
   
   const liveClientRef = useRef<GeminiLiveAPI | null>(null);
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
@@ -151,6 +153,12 @@ const App: React.FC = () => {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages]);
+
+  useEffect(() => {
+    if (storyContainerRef.current) {
+      storyContainerRef.current.scrollTop = storyContainerRef.current.scrollHeight;
+    }
+  }, [accumulatedStory, aiTranscription]);
 
   // --- UTILS ---
   const logDebug = (msg: string) => setDebugInfo(prev => `${msg}\n${prev}`.slice(0, 1500));
@@ -311,8 +319,16 @@ const App: React.FC = () => {
                  }, 500);
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
                 if (!message.data?.finished) {
-                    setAiTranscription(prev => prev + message.data.text);
-                    appendChat("GEMINI", message.data.text, "transcript");
+                    const delta = message.data.text;
+                    setAiTranscription(prev => prev + delta);
+                    setAccumulatedStory(prev => {
+                      // If previous text doesn't end with space/newline and new delta doesn't start with one, add a space
+                      if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !delta.startsWith(' ')) {
+                        return prev + ' ' + delta;
+                      }
+                      return prev + delta;
+                    });
+                    appendChat("GEMINI", delta, "transcript");
                 }
             } else if (msgType === 'INPUT_TRANSCRIPTION') {
                 setIsUserSpeaking(!message.data?.finished);
@@ -327,6 +343,9 @@ const App: React.FC = () => {
                 audioPlayerRef.current?.interrupt();
             } else if (msgType === 'AUDIO') {
                 audioPlayerRef.current?.play(message.data);
+            } else if (msgType === 'ERROR') {
+                logDebug("🚨 Gemini Error: " + JSON.stringify(message.data));
+                appendChat("SYSTEM", "AI encountered an error.", "system");
             } else if (msgType === 'TOOL_CALL' || msgType === 'TOOLCALL') {
                 logDebug("🛠️ Gemini is using a tool...");
                 const functionCalls = message.data?.functionCalls || [];
@@ -398,6 +417,8 @@ const App: React.FC = () => {
     setIsCameraActive(false);
     setCurrentIllustration(null);
     setStoryChoices([]);
+    setAccumulatedStory('');
+    setAiTranscription('');
     resetAgentStory();
     logDebug("Disconnected from Gemini.");
   };
@@ -450,6 +471,13 @@ const App: React.FC = () => {
       logDebug("Video streaming stopped.");
       liveClientRef.current?.sendTextMessage("[SYSTEM]: Mirror is now DARK. You are BLIND. Acknowledge and continue.");
     }
+  };
+
+  // --- RENDER HELPERS ---
+  const formatStoryText = (text: string) => {
+    // 1. Remove closed tags like [Camera OFF]
+    // 2. Remove partial open tags like [Cam (important for streaming)
+    return text.replace(/\[.*?\]/g, '').replace(/\[[^\]]*$/, '').replace(/\s\s+/g, ' ');
   };
 
   return (
@@ -506,9 +534,12 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="bg-white/95 p-8 border-t border-white/50 backdrop-blur-xl">
+            <div 
+              ref={storyContainerRef}
+              className="bg-white/95 h-48 p-8 border-t border-white/50 backdrop-blur-xl overflow-y-auto scroll-smooth flex-shrink-0"
+            >
               <p className="text-purple-950 text-2xl font-medium leading-relaxed italic text-center">
-                {aiTranscription || (appState === 'STORYTELLING' ? "..." : "Your story awaits")}
+                {formatStoryText(accumulatedStory || aiTranscription) || (appState === 'STORYTELLING' ? "The magic is brewing..." : "Your story awaits")}
               </p>
             </div>
           </div>

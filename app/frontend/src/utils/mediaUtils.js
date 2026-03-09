@@ -46,9 +46,9 @@ class AudioStreamer {
         sampleRate: this.sampleRate,
       });
 
-      // Load the audio worklet module
+      // Load the audio worklet module from absolute path
       await this.audioContext.audioWorklet.addModule(
-        "audio-processors/capture.worklet.js"
+        "/audio-processors/capture.worklet.js"
       );
 
       // Create the audio worklet node
@@ -66,8 +66,10 @@ class AudioStreamer {
           const pcmData = this.convertToPCM16(inputData);
           const base64Audio = this.arrayBufferToBase64(pcmData);
 
-          // Send to Gemini
+          // Send to Gemini with rate info
           if (this.client && this.client.connected) {
+            // Log once every few seconds
+            if (Math.random() < 0.01) console.log("Sending audio chunk to Gemini...");
             this.client.sendAudioMessage(base64Audio);
           }
         }
@@ -205,6 +207,7 @@ class BaseVideoCapture {
           reader.onloadend = () => {
             const base64 = reader.result.split(",")[1];
             if (this.client && this.client.connected) {
+              if (Math.random() < 0.05) console.log("Sending video frame to Gemini...");
               this.client.sendImageMessage(base64, "image/jpeg");
             }
           };
@@ -414,9 +417,9 @@ class AudioPlayer {
         sampleRate: this.sampleRate,
       });
 
-      // Load the audio worklet from external file
+      // Load the audio worklet from absolute path
       await this.audioContext.audioWorklet.addModule(
-        "audio-processors/playback.worklet.js"
+        "/audio-processors/playback.worklet.js"
       );
 
       // Create worklet node

@@ -51,6 +51,9 @@ class MultimodalLiveResponseMessage {
       } else if (data?.toolCall) {
         this.type = MultimodalLiveResponseType.TOOL_CALL;
         this.data = data?.toolCall;
+      } else if (data?.error) {
+        this.type = MultimodalLiveResponseType.ERROR;
+        this.data = data.error;
       } else if (parts?.length && parts[0].text) {
         this.data = parts[0].text;
         this.type = MultimodalLiveResponseType.TEXT;
@@ -120,13 +123,12 @@ class GeminiLiveAPI {
     // Automatic activity detection settings with defaults
     this.automaticActivityDetection = {
       disabled: false,
-      silence_duration_ms: 2000,
+      silence_duration_ms: 1500, // Reduced from 2000 for better responsiveness
       prefix_padding_ms: 500,
-      end_of_speech_sensitivity: "END_SENSITIVITY_UNSPECIFIED",
-      start_of_speech_sensitivity: "START_SENSITIVITY_UNSPECIFIED",
+      // Removed unspecified sensitivity to let Google use defaults
     };
 
-    this.activityHandling = "ACTIVITY_HANDLING_UNSPECIFIED";
+    this.activityHandling = null; // Don't send if not set
 
     this.apiHost = "us-central1-aiplatform.googleapis.com";
     this.serviceUrl = `wss://${this.apiHost}/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent`;
@@ -284,10 +286,13 @@ class GeminiLiveAPI {
 
         realtime_input_config: {
           automatic_activity_detection: this.automaticActivityDetection,
-          activity_handling: this.activityHandling,
         },
       },
     };
+
+    if (this.activityHandling) {
+      sessionSetupMessage.setup.realtime_input_config.activity_handling = this.activityHandling;
+    }
 
     // Add transcription config if enabled
     if (this.inputAudioTranscription) {
@@ -365,7 +370,7 @@ class GeminiLiveAPI {
   }
 
   sendAudioMessage(base64PCM) {
-    this.sendRealtimeInputMessage(base64PCM, "audio/pcm");
+    this.sendRealtimeInputMessage(base64PCM, "audio/pcm;rate=16000");
   }
 
   async sendImageMessage(base64Image, mime_type = "image/jpeg") {
