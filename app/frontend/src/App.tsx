@@ -104,6 +104,7 @@ const App: React.FC = () => {
   // --- CHARACTER WORKSHOP STATE ---
   const [characterDescription, setCharacterDescription] = useState('a little girl with red pigtails in a green dress');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [actionUrl, setActionUrl] = useState<string | null>(null);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [isGeneratingAction, setIsGeneratingAction] = useState(false);
 
@@ -226,6 +227,7 @@ const App: React.FC = () => {
   const handleCreateAvatar = async () => {
     setIsGeneratingAvatar(true);
     setAvatarUrl(null);
+    setActionUrl(null);
     logDebug("🎨 Requesting fairytale avatar...");
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
@@ -236,9 +238,10 @@ const App: React.FC = () => {
       });
       const data = await response.json();
       if (data.path) {
-        setAvatarUrl(data.path);
+        const fullPath = backendUrl + data.path;
+        setAvatarUrl(fullPath);
         // Also set as current illustration if we want to see it big
-        setCurrentIllustration(data.path);
+        setCurrentIllustration(fullPath);
         logDebug("✓ Avatar created!");
       }
     } catch (err) {
@@ -250,6 +253,7 @@ const App: React.FC = () => {
 
   const handleGenerateAction = async (action: string) => {
     setIsGeneratingAction(true);
+    setActionUrl(null);
     logDebug(`🖼️ Generating consistent action: ${action}...`);
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
@@ -260,8 +264,10 @@ const App: React.FC = () => {
       });
       const data = await response.json();
       if (data.path) {
+        const fullPath = backendUrl + data.path;
+        setActionUrl(fullPath);
         // Also set as current illustration
-        setCurrentIllustration(data.path);
+        setCurrentIllustration(fullPath);
         logDebug("✓ Consistent action generated!");
       }
     } catch (err) {
@@ -716,6 +722,9 @@ const App: React.FC = () => {
 
                     {avatarUrl && (
                         <div className="pt-4 border-t border-purple-100 animate-in slide-in-from-top-4">
+                            <div className="mb-4 rounded-2xl overflow-hidden border-2 border-purple-200 shadow-sm aspect-square bg-white">
+                                <img src={actionUrl || avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                            </div>
                             <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintenance consistency)</label>
                             <div className="flex gap-2">
                                 <button 
