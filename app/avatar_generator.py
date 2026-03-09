@@ -50,7 +50,7 @@ class StoryAvatarGenerator:
             )
         )
         
-        self.output_dir = "temp_avatars"
+        self.output_dir = os.path.join(os.path.dirname(__file__), "temp_avatars")
         os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_initial_avatar(self, appearance_description: str) -> str:

@@ -23,6 +23,7 @@ from opentelemetry.sdk.trace import TracerProvider, export
 from pydantic import BaseModel
 
 from authenticated_httpx import create_authenticated_client
+from avatar_generator import StoryAvatarGenerator
 
 load_dotenv()
 
@@ -154,6 +155,38 @@ class SimpleChatRequest(BaseModel):
     message: str
     user_id: str = "test_user"
     session_id: Optional[str] = None
+
+class AvatarRequest(BaseModel):
+    description: str
+    user_id: str = "test_user"
+
+# Global generator instance (or you could create it per request if needed)
+# But keeping it global might maintain the session if we wanted, 
+# though for different users we might need a map.
+generators: Dict[str, StoryAvatarGenerator] = {}
+
+def get_generator(user_id: str) -> StoryAvatarGenerator:
+    if user_id not in generators:
+        generators[user_id] = StoryAvatarGenerator()
+    return generators[user_id]
+
+@app.post("/api/avatar/create")
+async def create_avatar(request: AvatarRequest):
+    generator = get_generator(request.user_id)
+    loop = asyncio.get_event_loop()
+    # image generation can be slow, run in thread pool
+    path = await loop.run_in_executor(None, generator.generate_initial_avatar, request.description)
+    # Convert local path to URL path
+    url_path = f"/avatars/{os.path.basename(path)}"
+    return {"path": url_path}
+
+@app.post("/api/avatar/action")
+async def avatar_action(request: AvatarRequest):
+    generator = get_generator(request.user_id)
+    loop = asyncio.get_event_loop()
+    path = await loop.run_in_executor(None, generator.generate_consistent_action, request.description)
+    url_path = f"/avatars/{os.path.basename(path)}"
+    return {"path": url_path}
 
 @app.post("/api/chat_stream")
 async def chat_stream(request: SimpleChatRequest):
@@ -371,6 +404,11 @@ async def gemini_live_proxy(websocket: WebSocket):
         logger.info("🔌 Proxy connection closed")
 
 # MOUNT STATIC FILES
+# Mount avatars directory
+avatar_dir = os.path.join(os.path.dirname(__file__), "temp_avatars")
+os.makedirs(avatar_dir, exist_ok=True)
+app.mount("/avatars", StaticFiles(directory=avatar_dir), name="avatars")
+
 # Use 'dist' folder for React production build (built in Docker stage)
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend", "dist")
 if os.path.exists(frontend_path):

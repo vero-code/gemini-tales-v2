@@ -101,6 +101,12 @@ const App: React.FC = () => {
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
   const { fetchStory, storyText, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
 
+  // --- CHARACTER WORKSHOP STATE ---
+  const [characterDescription, setCharacterDescription] = useState('a little girl with red pigtails in a green dress');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
+  const [isGeneratingAction, setIsGeneratingAction] = useState(false);
+
   // --- DEV PANEL STATE ---
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
@@ -216,46 +222,52 @@ const App: React.FC = () => {
     liveClientRef.current?.sendTextMessage(`I choose: ${choice}`);
   };
 
-  const fetchStoryFromAgents = async (prompt: string) => {
+
+  const handleCreateAvatar = async () => {
+    setIsGeneratingAvatar(true);
+    setAvatarUrl(null);
+    logDebug("🎨 Requesting fairytale avatar...");
     try {
-      logDebug("Fetching magical story from agents...");
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
-      const response = await fetch(`${backendUrl}/api/chat_stream`, {
+      const response = await fetch(`${backendUrl}/api/avatar/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt })
+        body: JSON.stringify({ description: characterDescription })
       });
-
-      if (!response.body) return null;
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const data = JSON.parse(line);
-            if (data.type === 'progress') {
-              logDebug(data.text);
-            } else if (data.type === 'result') {
-              fullText = data.text;
-            }
-          } catch (e) {
-            console.error("Error parsing SSE chunk", e);
-          }
-        }
+      const data = await response.json();
+      if (data.path) {
+        setAvatarUrl(data.path);
+        // Also set as current illustration if we want to see it big
+        setCurrentIllustration(data.path);
+        logDebug("✓ Avatar created!");
       }
-      return fullText;
     } catch (err) {
-      logDebug("Failed to fetch story: " + err);
-      return null;
+      logDebug("Failed to create avatar: " + err);
+    } finally {
+      setIsGeneratingAvatar(false);
+    }
+  };
+
+  const handleGenerateAction = async (action: string) => {
+    setIsGeneratingAction(true);
+    logDebug(`🖼️ Generating consistent action: ${action}...`);
+    try {
+      const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      const response = await fetch(`${backendUrl}/api/avatar/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: action })
+      });
+      const data = await response.json();
+      if (data.path) {
+        // Also set as current illustration
+        setCurrentIllustration(data.path);
+        logDebug("✓ Consistent action generated!");
+      }
+    } catch (err) {
+      logDebug("Failed to generate action: " + err);
+    } finally {
+      setIsGeneratingAction(false);
     }
   };
 
@@ -674,8 +686,61 @@ const App: React.FC = () => {
             </div> */}
         </div>
 
-        {/* Chat & Debug */}
-        <div className="flex-1 flex flex-col gap-4">
+        {/* Character Workshop & Chat Logs */}
+        <div className="flex-1 flex flex-col gap-6">
+            <div className="bg-purple-50/50 p-6 rounded-[30px] border-2 border-purple-200">
+                <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2">✨ Character Workshop</h3>
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-purple-600 uppercase">Appearance</label>
+                        <input 
+                            type="text" 
+                            value={characterDescription} 
+                            onChange={e => setCharacterDescription(e.target.value)}
+                            placeholder="e.g. girl with red pigtails..." 
+                            className="bg-white border border-purple-200 rounded-xl p-3 text-sm focus:border-purple-500 outline-none"
+                        />
+                        <button 
+                            onClick={handleCreateAvatar}
+                            disabled={isGeneratingAvatar}
+                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-md transition-all ${isGeneratingAvatar ? 'bg-purple-200 text-purple-400' : 'bg-purple-600 text-white hover:bg-purple-700 active:scale-95'}`}
+                        >
+                            {isGeneratingAvatar ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                    Painting portrait...
+                                </span>
+                            ) : "🎨 Create Fairytale Avatar"}
+                        </button>
+                    </div>
+
+                    {avatarUrl && (
+                        <div className="pt-4 border-t border-purple-100 animate-in slide-in-from-top-4">
+                            <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintenance consistency)</label>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => handleGenerateAction("the character is casting a magic spell with a wooden wand")}
+                                    disabled={isGeneratingAction}
+                                    className="flex-1 bg-white border border-purple-200 py-3 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all disabled:opacity-50"
+                                >
+                                    🪄 Cast Magic
+                                </button>
+                                <button 
+                                    onClick={() => handleGenerateAction("the character is running through a field of flowers")}
+                                    disabled={isGeneratingAction}
+                                    className="flex-1 bg-white border border-purple-200 py-3 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all disabled:opacity-50"
+                                >
+                                    🏃 Run in Field
+                                </button>
+                            </div>
+                            {isGeneratingAction && (
+                                <p className="text-[10px] text-purple-500 mt-2 text-center animate-pulse">Gemini is rendering the action...</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">💬 Chat Logs</h3>
                 <div ref={chatContainerRef} className="border border-gray-200 bg-white rounded-xl h-[180px] overflow-y-auto p-4 space-y-2 shadow-inner text-sm">
