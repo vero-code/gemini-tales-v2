@@ -1,6 +1,7 @@
 import os
 import io
 import json
+import uuid
 import logging
 from typing import Optional
 from google import genai
@@ -80,7 +81,8 @@ The white background is essential for character compositing."""
         logger.info(f"🎨 Generating initial avatar for: {appearance_description}...")
         response = self.chat.send_message(prompt)
         
-        portrait_path = self._save_image_from_response(response, "portrait.png")
+        filename = f"portrait_{uuid.uuid4().hex[:8]}.png"
+        portrait_path = self._save_image_from_response(response, filename)
         if not portrait_path:
             raise Exception("Failed to generate portrait - no image in response")
         
@@ -125,7 +127,8 @@ The result should be clearly recognizable as THIS specific person, but illustrat
             types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg")
         ])
         
-        portrait_path = self._save_image_from_response(response, "portrait.png")
+        filename = f"portrait_{uuid.uuid4().hex[:8]}.png"
+        portrait_path = self._save_image_from_response(response, filename)
         if not portrait_path:
             raise Exception("Failed to transform photo - no image in response")
         
@@ -158,7 +161,8 @@ The character must be immediately recognizable as the same person from the portr
         logger.info(f"🖼️ Generating consistent action: {action_description}...")
         response = self.chat.send_message(prompt)
         
-        action_path = self._save_image_from_response(response, "action.png")
+        filename = f"action_{uuid.uuid4().hex[:8]}.png"
+        action_path = self._save_image_from_response(response, filename)
         if not action_path:
             raise Exception("Failed to generate action image - no image in response")
         
