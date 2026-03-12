@@ -116,8 +116,7 @@ const App: React.FC = () => {
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
   const { fetchStory, storyText, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
 
-  // --- CHARACTER WORKSHOP STATE ---
-  const [characterDescription, setCharacterDescription] = useState('a little girl with red pigtails in a green dress');
+  const [characterDescription, setCharacterDescription] = useState('a small woodland elf with translucent wings and a twig wand');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [actionUrl, setActionUrl] = useState<string | null>(null);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
@@ -246,7 +245,7 @@ const App: React.FC = () => {
     setIsGeneratingAvatar(true);
     setAvatarUrl(null);
     setActionUrl(null);
-    logDebug("🎨 Requesting fairytale avatar...");
+    logDebug("🧚 Imagining Puck's fairytale form...");
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
       const response = await fetch(`${backendUrl}/api/avatar/create`, {
@@ -260,7 +259,7 @@ const App: React.FC = () => {
         setAvatarUrl(fullPath);
         // Also set as current illustration if we want to see it big
         setCurrentIllustration(fullPath);
-        logDebug("✓ Avatar created!");
+        logDebug("✓ Puck is ready!");
       }
     } catch (err) {
       logDebug("Failed to create avatar: " + err);
@@ -273,7 +272,7 @@ const App: React.FC = () => {
     setIsGeneratingAvatar(true);
     setAvatarUrl(null);
     setActionUrl(null);
-    logDebug("📸 Transforming your photo into a character...");
+    logDebug("📸 Imagining Puck from this photo...");
     
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
@@ -292,7 +291,7 @@ const App: React.FC = () => {
         const fullPath = backendUrl + data.path;
         setAvatarUrl(fullPath);
         setCurrentIllustration(fullPath);
-        logDebug("✓ Magic photo transformation complete!");
+        logDebug("✓ Puck's magic transformation complete!");
       }
     } catch (err) {
       logDebug("Photo transform failed: " + err);
@@ -304,7 +303,7 @@ const App: React.FC = () => {
   const handleGenerateAction = async (action: string) => {
     setIsGeneratingAction(true);
     setActionUrl(null);
-    logDebug(`🖼️ Generating consistent action: ${action}...`);
+    logDebug(`🖼️ Painting Puck in action: ${action}...`);
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
       const response = await fetch(`${backendUrl}/api/avatar/action`, {
@@ -318,7 +317,7 @@ const App: React.FC = () => {
         setActionUrl(fullPath);
         // Also set as current illustration
         setCurrentIllustration(fullPath);
-        logDebug("✓ Consistent action generated!");
+        logDebug("✓ Action captured!");
       }
     } catch (err) {
       logDebug("Failed to generate action: " + err);
@@ -782,18 +781,18 @@ const App: React.FC = () => {
             </div> */}
         </div>
 
-        {/* Character Workshop & Chat Logs */}
+        {/* Puck's Appearance Workshop & Chat Logs */}
         <div className="flex-1 flex flex-col gap-6">
             <div className="bg-purple-50/50 p-6 rounded-[30px] border-2 border-purple-200">
-                <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2">✨ Character Workshop</h3>
+                <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2">🧚 Customize Puck</h3>
                 <div className="space-y-4">
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-purple-600 uppercase">Appearance</label>
+                        <label className="text-xs font-bold text-purple-600 uppercase">Puck's Appearance</label>
                         <input 
                             type="text" 
                             value={characterDescription} 
                             onChange={e => setCharacterDescription(e.target.value)}
-                            placeholder="e.g. girl with red pigtails..." 
+                            placeholder="e.g. a small woodland elf with translucent wings..." 
                             className="bg-white border border-purple-200 rounded-xl p-3 text-sm focus:border-purple-500 outline-none"
                         />
                         <button 
@@ -804,9 +803,9 @@ const App: React.FC = () => {
                             {isGeneratingAvatar ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                                    Painting portrait...
+                                    Painting Puck...
                                 </span>
-                            ) : "🎨 Create Fairytale Avatar"}
+                            ) : "🎨 Bring Puck to Life"}
                         </button>
                         
                         <div className="flex gap-2">
@@ -832,7 +831,7 @@ const App: React.FC = () => {
                             <div className="mb-4 rounded-2xl overflow-hidden border-2 border-purple-200 shadow-sm aspect-square bg-white">
                                 <img src={actionUrl || avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
                             </div>
-                            <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintenance consistency)</label>
+                            <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintaining Puck's look)</label>
                             <div className="flex gap-2">
                                 <button 
                                     onClick={() => handleGenerateAction("the character is casting a magic spell with a wooden wand")}

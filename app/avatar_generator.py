@@ -56,17 +56,17 @@ class StoryAvatarGenerator:
 
     def generate_initial_avatar(self, appearance_description: str) -> str:
         """
-        Generates the first portrait of the character.
+        Generates the first portrait of Puck.
         
         Args:
-            appearance_description: Text description of the child's appearance.
+            appearance_description: Text description of Puck's appearance.
             
         Returns:
             Path to the saved portrait image.
         """
         prompt = f"""Create a fairytale character portrait.
 
-Character appearance: {appearance_description}
+Character appearance (this is Puck, our magical narrator): {appearance_description}
 
 CRITICAL STYLE REQUIREMENTS:
 - Art style: Watercolor, whimsical children's book illustration
@@ -100,7 +100,7 @@ The white background is essential for character compositing."""
         Returns:
             Path to the saved stylized portrait.
         """
-        prompt = f"""Transform this person into a stylized fairytale character portrait.
+        prompt = f"""Transform the person in this photo into Puck, a stylized fairytale narrator portrait.
 
 Character details: {appearance_description}
 
@@ -150,7 +150,7 @@ The result should be clearly recognizable as THIS specific person, but illustrat
 Action: {action_description}
 
 CRITICAL REQUIREMENTS:
-- SAME child, SAME face, SAME hair, SAME clothes — maintain perfect consistency with the previous portrait
+- SAME Puck, SAME face, SAME features, SAME magical elements — maintain perfect consistency
 - Full body or 3/4 view to show the action
 - Background: Pure solid white (#FFFFFF)
 - Art style: EXACTLY the same watercolor, whimsical children's book style
