@@ -66,7 +66,6 @@ export function useGeminiSocket(url: string) {
 
     const stopStream = useCallback(() => {
         if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
         }
         audioRecorder.current.stop();
@@ -79,10 +78,8 @@ export function useGeminiSocket(url: string) {
 
     const startStream = useCallback(async (videoElement: HTMLVideoElement) => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoElement.srcObject = stream;
-            streamRef.current = stream;
-            await videoElement.play();
+            // Use the video element directly. It should already be playing.
+            streamRef.current = videoElement.srcObject as MediaStream;
 
             try {
                 let packetCount = 0;

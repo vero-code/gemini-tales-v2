@@ -86,6 +86,20 @@ class ShowChoiceTool extends FunctionCallDefinition {
   functionToCall(parameters: any) { this.callback(parameters.options); }
 }
 
+class TriggerBiometricTool extends FunctionCallDefinition {
+  callback: () => void;
+  constructor(callback: () => void) {
+    super(
+      "triggerBiometric",
+      "Triggers the biometric hand scanner on the user's device. MUST call this when asking for the child to scan their hand.",
+      { type: "object", properties: {} },
+      []
+    );
+    this.callback = callback;
+  }
+  functionToCall() { this.callback(); }
+}
+
 const App: React.FC = () => {
   // --- STORY STATE ---
   const [appState, setAppState] = useState<AppState | 'IDLE' | 'STARTING' | 'STORYTELLING' | 'ERROR'>('IDLE');
@@ -121,6 +135,7 @@ const App: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [debugInfo, setDebugInfo] = useState('Application initialized...\n');
   const [showBiometricLock, setShowBiometricLock] = useState(false);
+  const [pendingBiometricId, setPendingBiometricId] = useState<string | null>(null);
 
   // --- REFS ---
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -343,6 +358,7 @@ const App: React.FC = () => {
         client.addFunction(new GenerateIllustrationTool((prompt: string) => generateNewIllustration(prompt)));
         client.addFunction(new AwardBadgeTool((badgeId: string) => handleAwardBadge(badgeId)));
         client.addFunction(new ShowChoiceTool((options: string[]) => setStoryChoices(options)));
+        client.addFunction(new TriggerBiometricTool(() => setShowBiometricLock(true)));
 
 
         client.onReceiveResponse = (message: any) => {
@@ -413,9 +429,13 @@ const App: React.FC = () => {
                        handleAwardBadge(fc.args.badgeId);
                    } else if (fc.name === 'showChoice') {
                        setStoryChoices(fc.args.options);
+                   } else if (fc.name === 'triggerBiometric') {
+                       setPendingBiometricId(fc.id);
+                       setShowBiometricLock(true);
                    }
                    
-                   if (liveClientRef.current) {
+                   // Respond immediately for everything EXCEPT triggerBiometric
+                   if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
                        const correctPayload = {
                            tool_response: {
                                function_responses: [
@@ -536,15 +556,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2] font-sans">
       
-      {showBiometricLock && (
-         <div className="fixed inset-0 z-[100] bg-black">
-            <BiometricLock onUnlock={() => {
-                setShowBiometricLock(false);
-                appendChat("SYSTEM", "Biometric verification successful!", "system");
-            }} />
-         </div>
-      )}
-
       {/* --- ACHIEVEMENT POPUP --- */}
       {lastAwarded && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
@@ -610,6 +621,33 @@ const App: React.FC = () => {
         <div className="w-full lg:w-96 flex flex-col gap-6">
           <div className={`glass-card rounded-[40px] overflow-hidden aspect-square relative shadow-xl bg-indigo-950 border-4 transition-all duration-500 ${isUserSpeaking ? 'border-pink-400 scale-[1.02]' : 'border-white/20'}`}>
             <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 transition-opacity duration-1000 ${isCameraActive ? 'opacity-80' : 'opacity-0'}`} />
+            
+            {showBiometricLock && (
+              <BiometricLock videoRef={videoRef as React.RefObject<HTMLVideoElement>} onUnlock={() => {
+                  setShowBiometricLock(false);
+                  appendChat("SYSTEM", "Biometric verification successful!", "system");
+                  
+                  if (pendingBiometricId && liveClientRef.current) {
+                      const payload = {
+                          tool_response: {
+                              function_responses: [
+                                  {
+                                      id: pendingBiometricId,
+                                      response: { result: "Success: The biometric verification passed." }
+                                  }
+                              ]
+                          }
+                      };
+                      liveClientRef.current.sendMessage(payload);
+                      setPendingBiometricId(null);
+                  }
+                  
+                  if (liveClientRef.current) {
+                      liveClientRef.current.sendTextMessage("[SYSTEM]: Biometric verification SUCCESSFUL. Proceed to PHASE 3.");
+                  }
+              }} />
+            )}
+
             {!isCameraActive && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
                 <span className="text-6xl mb-4">📷</span>
