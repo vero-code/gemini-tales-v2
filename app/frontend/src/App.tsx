@@ -215,6 +215,7 @@ const App: React.FC = () => {
       });
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
+          setVideoUrl(null); // Clear video so illustration can show
           setCurrentIllustration(`data:image/png;base64,${part.inlineData.data}`);
           logDebug("Image generated successfully.");
           break;
