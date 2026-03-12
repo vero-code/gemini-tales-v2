@@ -119,8 +119,10 @@ const App: React.FC = () => {
   const [characterDescription, setCharacterDescription] = useState('a small woodland elf with translucent wings and a twig wand');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [actionUrl, setActionUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [isGeneratingAction, setIsGeneratingAction] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
 
   // --- DEV PANEL STATE ---
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
@@ -326,6 +328,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAnimatePuck = async () => {
+    if (!characterDescription) return;
+    setIsGeneratingVideo(true);
+    setVideoUrl(null);
+    logDebug("🌿 Sending Puck to the Animation Studio (Veo 3.1)...");
+    try {
+      const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      const response = await fetch(`${backendUrl}/api/avatar/animate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: characterDescription })
+      });
+      const data = await response.json();
+      if (data.path) {
+        setVideoUrl(backendUrl + data.path);
+        logDebug("✓ Puck is ALIVE! Animation complete.");
+      }
+    } catch (err) {
+      logDebug("Failed to animate Puck: " + err);
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
   const sendText = () => {
     if (!chatInput.trim() || !liveClientRef.current) return;
     appendChat("YOU", chatInput, "text");
@@ -488,6 +514,7 @@ const App: React.FC = () => {
     setIsVideoOn(false);
     setIsCameraActive(false);
     setCurrentIllustration(null);
+    setVideoUrl(null);
     setStoryChoices([]);
     setAccumulatedStory('');
     setAiTranscription('');
@@ -579,7 +606,9 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col gap-6">
           <div className="glass-card rounded-[40px] overflow-hidden flex-1 shadow-xl flex flex-col relative min-h-[400px] bg-white/60 border border-white/50 backdrop-blur-md">
             <div className="flex-1 bg-white/20 flex items-center justify-center relative">
-              {currentIllustration ? (
+              {videoUrl ? (
+                <video src={videoUrl} autoPlay loop muted className="w-full h-full object-cover animate-in fade-in duration-1000" />
+              ) : currentIllustration ? (
                 <img src={currentIllustration} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Story Scene" />
               ) : (
                 <div className="text-center p-12 space-y-6">
@@ -848,6 +877,18 @@ const App: React.FC = () => {
                                     🏃 Run in Field
                                 </button>
                             </div>
+                            <button 
+                                onClick={handleAnimatePuck}
+                                disabled={isGeneratingVideo}
+                                className={`w-full mt-3 py-3 rounded-xl font-bold text-sm shadow-md transition-all ${isGeneratingVideo ? 'bg-indigo-200 text-indigo-400' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 active:scale-95'}`}
+                            >
+                                {isGeneratingVideo ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                        Veo is animating Puck...
+                                    </span>
+                                ) : "✨ Bring Puck to Life (Animate Video)"}
+                            </button>
                             {isGeneratingAction && (
                                 <p className="text-[10px] text-purple-500 mt-2 text-center animate-pulse">Gemini is rendering the action...</p>
                             )}

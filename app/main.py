@@ -216,6 +216,14 @@ async def avatar_action(request: AvatarRequest):
     url_path = f"/avatars/{os.path.basename(path)}"
     return {"path": url_path}
 
+@app.post("/api/avatar/animate")
+async def animate_avatar(request: AvatarRequest):
+    generator = get_generator(request.user_id)
+    loop = asyncio.get_event_loop()
+    path = await loop.run_in_executor(None, generator.generate_animated_puck, request.description)
+    url_path = f"/avatars/{os.path.basename(path)}"
+    return {"path": url_path}
+
 @app.post("/api/chat_stream")
 async def chat_stream(request: SimpleChatRequest):
     """Streaming chat endpoint."""

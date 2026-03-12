@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 from google import genai
 from google.genai import types
+import time
 from PIL import Image
 from dotenv import load_dotenv
 
@@ -168,6 +169,45 @@ The character must be immediately recognizable as the same person from the portr
         
         logger.info(f"✓ Action image generated at {action_path}")
         return action_path
+
+    def generate_animated_puck(self, appearance_description: str) -> str:
+        """
+        Generates a 4-second video of Puck using Veo 3.1.
+        """
+        prompt = f"""A magical fairytale animation of Puck. 
+        Appearance: {appearance_description}.
+        Puck is floating in a magical forest, blinking and smiling, with translucent wings gently fluttering. 
+        Art style: Watercolor whimsical children's book illustration.
+        Slow, gentle movement, magical atmosphere."""
+
+        logger.info(f"🌿 Animating Puck with Veo 3.1: {appearance_description}...")
+        
+        operation = self.client.models.generate_videos(
+            model="veo-3.1-generate-preview",
+            prompt=prompt,
+            config=types.GenerateVideosConfig(
+                aspect_ratio="16:9",
+                resolution="720p",
+                duration_seconds=4,
+            )
+        )
+
+        # Poll until complete
+        while not operation.done:
+            logger.info("   Generating video...")
+            time.sleep(5)
+            operation = self.client.operations.get(operation)
+
+        if not operation.response or not operation.response.generated_videos:
+            raise Exception("Failed to generate animation - no video in response")
+
+        generated_video = operation.response.generated_videos[0]
+        filename = f"puck_anim_{uuid.uuid4().hex[:8]}.mp4"
+        video_path = os.path.join(self.output_dir, filename)
+        generated_video.video.save(video_path)
+
+        logger.info(f"✓ Puck is alive! Video saved at {video_path}")
+        return video_path
 
     def _save_image_from_response(self, response, filename: str) -> Optional[str]:
         """Helper to extract and save the image from a Gemini response."""
