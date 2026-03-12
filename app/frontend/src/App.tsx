@@ -6,6 +6,7 @@ import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
 import { SYSTEM_INSTRUCTION, AGENT_SYSTEM_INSTRUCTION, INITIAL_ACHIEVEMENTS } from './config';
 import { ModeSelector } from './components/ModeSelector';
 import { useAgentStory } from './hooks/useAgentStory';
+import BiometricLock from './components/BiometricLock';
 
 // --- ENV VARIABLES ---
 const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
@@ -119,6 +120,7 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<{sender: string, text: string, type: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [debugInfo, setDebugInfo] = useState('Application initialized...\n');
+  const [showBiometricLock, setShowBiometricLock] = useState(false);
 
   // --- REFS ---
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -534,6 +536,15 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2] font-sans">
       
+      {showBiometricLock && (
+         <div className="fixed inset-0 z-[100] bg-black">
+            <BiometricLock onUnlock={() => {
+                setShowBiometricLock(false);
+                appendChat("SYSTEM", "Biometric verification successful!", "system");
+            }} />
+         </div>
+      )}
+
       {/* --- ACHIEVEMENT POPUP --- */}
       {lastAwarded && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
@@ -605,6 +616,14 @@ const App: React.FC = () => {
                 <span className="font-black text-xs uppercase tracking-tighter">Camera Off</span>
               </div>
             )}
+            <div className="absolute top-6 right-6">
+               <button 
+                  onClick={() => setShowBiometricLock(true)} 
+                  className="bg-cyan-500/80 hover:bg-cyan-400 text-white px-3 py-1.5 rounded-full text-xs font-black tracking-widest uppercase shadow-lg border border-cyan-300 transition-all active:scale-95"
+               >
+                 Verify Biometrics
+               </button>
+            </div>
             <div className="absolute bottom-6 left-6 bg-black/60 px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md">
                <div className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
                <span className="text-white text-[12px] font-black tracking-widest uppercase">{isUserSpeaking ? "User Speaking" : "AI Storytelling"}</span>

@@ -25,6 +25,16 @@ from pydantic import BaseModel
 from authenticated_httpx import create_authenticated_client
 from avatar_generator import StoryAvatarGenerator
 
+from google.adk.agents.live_request_queue import LiveRequestQueue
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+from biometric_agent import root_agent
+
+session_service = InMemorySessionService()
+runner = Runner(app_name="alpha-drone", agent=root_agent, session_service=session_service)
+
 load_dotenv()
 
 class Feedback(BaseModel):
@@ -420,6 +430,105 @@ async def gemini_live_proxy(websocket: WebSocket):
             except Exception:
                 pass
         logger.info("🔌 Proxy connection closed")
+
+
+@app.websocket("/ws/adk_live/{user_id}/{session_id}")
+async def websocket_adk_endpoint(
+    websocket: WebSocket,
+    user_id: str,
+    session_id: str,
+    proactivity: bool = True,
+    affective_dialog: bool = False,
+) -> None:
+    await websocket.accept()
+    logger.info(f"WebSocket connected: {user_id}/{session_id}")
+
+    model_name = root_agent.model
+    is_native_audio = "native-audio" in model_name.lower() or "live" in model_name.lower() or "exp" in model_name.lower()
+
+    if is_native_audio:
+        response_modalities = ["AUDIO"]
+        run_config = RunConfig(
+            streaming_mode=StreamingMode.BIDI,
+            response_modalities=response_modalities,
+            input_audio_transcription=types.AudioTranscriptionConfig(),
+            output_audio_transcription=types.AudioTranscriptionConfig(),
+            session_resumption=types.SessionResumptionConfig(),
+            proactivity=types.ProactivityConfig(proactive_audio=True) if proactivity else None,
+            enable_affective_dialog=affective_dialog if affective_dialog else None,
+        )
+    else:
+        response_modalities = ["TEXT"]
+        run_config = None
+
+    session = await session_service.get_session(
+        app_name="alpha-drone", user_id=user_id, session_id=session_id
+    )
+    if not session:
+        await session_service.create_session(
+            app_name="alpha-drone", user_id=user_id, session_id=session_id
+        )
+    
+    live_request_queue = LiveRequestQueue()
+    live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello")]))
+
+    async def upstream_task() -> None:
+        try:
+            while True:
+                message = await websocket.receive()
+                
+                if "bytes" in message:
+                    audio_data = message["bytes"]
+                    audio_blob = types.Blob(
+                        mime_type="audio/pcm;rate=16000", data=audio_data
+                    )
+                    live_request_queue.send_realtime(audio_blob)
+                elif "text" in message:
+                    text_data = message["text"]
+                    json_message = json.loads(text_data)
+
+                    if json_message.get("type") == "text":
+                        content = types.Content(
+                            parts=[types.Part(text=json_message["text"])]
+                        )
+                        live_request_queue.send_content(content)
+                    elif json_message.get("type") == "audio":
+                        import base64
+                        audio_data = base64.b64decode(json_message.get("data", ""))
+                        audio_blob = types.Blob(
+                            mime_type="audio/pcm;rate=16000", 
+                            data=audio_data
+                        )
+                        live_request_queue.send_realtime(audio_blob)
+                    elif json_message.get("type") == "image":
+                        import base64
+                        image_data = base64.b64decode(json_message["data"])
+                        mime_type = json_message.get("mimeType", "image/jpeg")
+                        image_blob = types.Blob(mime_type=mime_type, data=image_data)
+                        live_request_queue.send_realtime(image_blob)
+        finally:
+            pass
+
+    async def downstream_task() -> None:
+        async for event in runner.run_live(
+            user_id=user_id,
+            session_id=session_id,
+            live_request_queue=live_request_queue,
+            run_config=run_config,
+        ):
+            event_json = event.model_dump_json(exclude_none=True, by_alias=True)
+            await websocket.send_text(event_json)
+
+    try:
+        from fastapi import WebSocketDisconnect
+        await asyncio.gather(upstream_task(), downstream_task())
+    except WebSocketDisconnect:
+        logger.info("Client disconnected")
+    except Exception as e:
+        logger.error(f"Error: {e}")
+    finally:
+        live_request_queue.close()
+
 
 # MOUNT STATIC FILES
 # Mount avatars directory

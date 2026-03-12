@@ -198,3 +198,5 @@ my_env.tfvars
 .local/
 .adk
 session.db
+
+app/temp_avatars
