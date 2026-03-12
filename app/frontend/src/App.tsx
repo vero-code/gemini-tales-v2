@@ -380,7 +380,7 @@ const App: React.FC = () => {
                            startMsg = `The Storysmith has prepared this adventure for tonight:\n\n${storyText}\n\nPlease start the story NOW following your instructions. Introduce yourself as Puck and ask for the child's name, then begin Chapter 1.`;
                          } else {
                            // Live Mode: improvise
-                           startMsg = "Start PHASE 1: Introduce yourself and ask me to turn on the camera. Do NOT start the story yet. Speak to me in English.";
+                           startMsg = "Start PHASE 1: Introduce yourself and ask for my name. Do NOT start the story yet. Speak to me in English.";
                          }
                          liveClientRef.current.sendTextMessage(startMsg);
                          appendChat("SYSTEM", `Starting in ${storyMode === 'agent' ? 'Agent' : 'Live'} Mode...`, "system");
