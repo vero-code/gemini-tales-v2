@@ -364,18 +364,25 @@ const App: React.FC = () => {
   const connect = async () => {
     setAppState('STARTING');
     setConnectionStatus('Connecting...');
-    logDebug("Connecting to Gemini...");
+    logDebug("Connecting to ADK Puck Agent...");
 
     try {
-        console.log("Starting connection to:", PROXY_URL);
-        const fullProxyUrl = `${PROXY_URL}?project=${PROJECT_ID}&model=${MODEL_ID}`;
-        logDebug(`Target URL: ${fullProxyUrl}`);
+        const sessionId = Math.random().toString(36).substring(7);
+        const baseUrl = PROXY_URL.split('/ws/proxy')[0]; 
+        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}`;
 
-        const client = new GeminiLiveAPI(fullProxyUrl, PROJECT_ID, MODEL_ID);
+        console.log("Starting connection to ADK:", adkUrl);
+        logDebug(`Target URL: ${adkUrl}`);
+
+        const client = new GeminiLiveAPI(adkUrl, PROJECT_ID, MODEL_ID);
+        client.useADK = true;
         liveClientRef.current = client;
 
         client.systemInstructions = storyMode === 'agent' ? AGENT_SYSTEM_INSTRUCTION : SYSTEM_INSTRUCTION;
-        client.responseModalities = ["AUDIO"];
+        client.responseModalities = [
+            { modality: "AUDIO" },
+            { modality: "TEXT" }
+        ];
         client.voiceName = "Puck";
         client.inputAudioTranscription = true;
         client.outputAudioTranscription = true;
@@ -387,47 +394,57 @@ const App: React.FC = () => {
         client.addFunction(new TriggerBiometricTool(() => setShowBiometricLock(true)));
 
 
-        client.onReceiveResponse = (message: any) => {
-            if (!message || !message.type) return;
+        client.onReceiveResponse = async (message: any) => {
+            if (!message) return;
+    
+            // ✅ Проверяй ВСЕ возможные форматы
+            const msgType = String(
+                message.type || 
+                (message.setupComplete ? 'SETUP_COMPLETE' : '') ||
+                (message.serverContent?.turnComplete ? 'TURN_COMPLETE' : '') ||
+                ''
+            ).toUpperCase().replace(" ", "_");
             
-            const msgType = String(message.type).toUpperCase().replace(" ", "_");
+            if (!msgType) return; // Если нет типа, пропусти
+            
+            logDebug(`📨 Received: ${msgType}`);
             
             if (msgType === 'SETUP_COMPLETE') {
-                 setConnectionStatus('Connected');
-                 setAppState('STORYTELLING');
-                 appendChat("SYSTEM", "Setup Complete. Ready!", "system");
-                 logDebug("Setup complete! Magic is starting.");
-
-                 setTimeout(async () => {
-                     if (liveClientRef.current) {
-                         let startMsg: string;
-                         if (storyMode === 'agent' && storyText) {
-                           // Agent Mode: pass the pre-generated story and use agent system instruction
-                           startMsg = `The Storysmith has prepared this adventure for tonight:\n\n${storyText}\n\nPlease start the story NOW following your instructions. Introduce yourself as Puck and ask for the child's name, then begin Chapter 1.`;
-                         } else {
-                           // Live Mode: improvise
-                           startMsg = "Start PHASE 1: Introduce yourself and ask for my name. Do NOT start the story yet. Speak to me in English.";
-                         }
-                         liveClientRef.current.sendTextMessage(startMsg);
-                         appendChat("SYSTEM", `Starting in ${storyMode === 'agent' ? 'Agent' : 'Live'} Mode...`, "system");
-                     }
-                 }, 500);
+              setConnectionStatus('Connected');
+              setAppState('STORYTELLING');
+              appendChat("SYSTEM", "Setup Complete. Ready!", "system");
+              logDebug("Setup complete! Magic is starting.");
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
                 if (!message.data?.finished) {
                     const delta = message.data.text;
                     setAiTranscription(prev => prev + delta);
                     setAccumulatedStory(prev => {
-                      // If previous text doesn't end with space/newline and new delta doesn't start with one, add a space
-                      if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !delta.startsWith(' ')) {
-                        return prev + ' ' + delta;
-                      }
-                      return prev + delta;
+                        if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !delta.startsWith(' ')) {
+                            return prev + ' ' + delta;
+                        }
+                        return prev + delta;
                     });
                     appendChat("GEMINI", delta, "transcript");
                 }
-            } else if (msgType === 'INPUT_TRANSCRIPTION') {
-                setIsUserSpeaking(!message.data?.finished);
-                if (!message.data?.finished) appendChat("YOU", message.data.text, "transcript");
+            } else if (msgType === 'AUDIO') {
+                logDebug(`🎙️ Got AUDIO event, data length: ${message.data?.length || 0}`);
+    
+                if (!audioPlayerRef.current) {
+                    logDebug("❌ AudioPlayer not initialized!");
+                    return;
+                }
+                
+                if (!audioPlayerRef.current.isInitialized) {
+                    logDebug("❌ AudioPlayer not ready, re-initializing...");
+                    await audioPlayerRef.current.init();
+                }
+                
+                try {
+                    await audioPlayerRef.current.play(message.data);
+                    logDebug("✅ Audio played");
+                } catch (err) {
+                    logDebug(`❌ Play error: ${err}`);
+                }
             } else if (msgType === 'TURN_COMPLETE') {
                 setAiTranscription('');
                 setIsUserSpeaking(false);
@@ -436,8 +453,6 @@ const App: React.FC = () => {
                 setStoryChoices([]);
                 appendChat("SYSTEM", "[Interrupted]", "system");
                 audioPlayerRef.current?.interrupt();
-            } else if (msgType === 'AUDIO') {
-                audioPlayerRef.current?.play(message.data);
             } else if (msgType === 'ERROR') {
                 logDebug("🚨 Gemini Error: " + JSON.stringify(message.data));
                 appendChat("SYSTEM", "AI encountered an error.", "system");
@@ -494,7 +509,13 @@ const App: React.FC = () => {
         client.connect();
 
         const player = new AudioPlayer();
-        await player.init();
+        logDebug("🔧 Initializing audio player...");
+        try {
+            await player.init();
+            logDebug("✅ Audio player initialized successfully");
+        } catch (initErr) {
+            logDebug(`❌ Audio player init failed: ${initErr}`);
+        }
         audioPlayerRef.current = player;
 
     } catch (error) {

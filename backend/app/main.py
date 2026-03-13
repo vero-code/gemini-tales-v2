@@ -30,10 +30,14 @@ from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
-from biometric_agent import root_agent
+
+# Import agents
+from biometric_agent import root_agent as bio_agent
+from puck_agent import puck_agent
 
 session_service = InMemorySessionService()
-runner = Runner(app_name="alpha-drone", agent=root_agent, session_service=session_service)
+bio_runner = Runner(app_name="biometric", agent=bio_agent, session_service=session_service)
+puck_runner = Runner(app_name="puck", agent=puck_agent, session_service=session_service)
 
 load_dotenv()
 
@@ -470,12 +474,10 @@ async def websocket_adk_endpoint(
         run_config = None
 
     session = await session_service.get_session(
-        app_name="alpha-drone", user_id=user_id, session_id=session_id
+        app_name="biometric", user_id=user_id, session_id=session_id
     )
     if not session:
-        await session_service.create_session(
-            app_name="alpha-drone", user_id=user_id, session_id=session_id
-        )
+        await session_service.create_session(app_name="biometric", user_id=user_id, session_id=session_id)
     
     live_request_queue = LiveRequestQueue()
     live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello")]))
@@ -518,7 +520,7 @@ async def websocket_adk_endpoint(
             pass
 
     async def downstream_task() -> None:
-        async for event in runner.run_live(
+        async for event in bio_runner.run_live(
             user_id=user_id,
             session_id=session_id,
             live_request_queue=live_request_queue,
@@ -537,6 +539,107 @@ async def websocket_adk_endpoint(
     finally:
         live_request_queue.close()
 
+import json
+from typing import List, Dict
+
+def transform_adk_to_gemini_format(event) -> List[Dict]:
+    """Конвертирует ADK events в Gemini Live API формат"""
+    results = []
+    event_dict = json.loads(event.model_dump_json(exclude_none=True, by_alias=True))
+    
+    # 1. Output Transcription
+    if "outputTranscription" in event_dict:
+        results.append({
+            "type": "OUTPUT_TRANSCRIPTION",
+            "data": event_dict["outputTranscription"]
+        })
+    
+    # 2. Audio
+    if "content" in event_dict and event_dict["content"]:
+        parts = event_dict["content"].get("parts", [])
+        for part in parts:
+            if "inlineData" in part:
+                results.append({"type": "AUDIO", "data": part["inlineData"]["data"]})
+            elif "text" in part:
+                results.append({"type": "TEXT", "data": part["text"]})
+    
+    # 3. Turn Complete ТОЛЬКО если не partial
+    if not event_dict.get("partial"):
+        results.append({"serverContent": {"turnComplete": True}})
+    
+    return results
+
+@app.websocket("/ws/puck_live/{user_id}/{session_id}")
+async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id: str):
+    await websocket.accept()
+    logger.info(f"✅ Puck Agent Connected: {user_id}/{session_id}")
+
+    session = await session_service.get_session(app_name="puck", user_id=user_id, session_id=session_id)
+    if not session:
+        await session_service.create_session(app_name="puck", user_id=user_id, session_id=session_id)
+
+    run_config = RunConfig(
+        streaming_mode=StreamingMode.BIDI,
+        speech_config=types.SpeechConfig(
+            language_code="en-US",
+            voice_config=types.VoiceConfig(
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                    voice_name="Puck"
+                )
+            ),
+        ),
+    )
+
+    live_request_queue = LiveRequestQueue()
+    logger.info("📤 Sending initial setup message...")
+    live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello Puck! Start PHASE 1: Introduce yourself.")]))
+
+    async def upstream_task():
+        try:
+            while True:
+                message = await websocket.receive()
+                if "bytes" in message:
+                    live_request_queue.send_realtime(types.Blob(mime_type="audio/pcm;rate=16000", data=message["bytes"]))
+                elif "text" in message:
+                    data = json.loads(message["text"])
+                    if "client_content" in data:
+                        turns = data["client_content"].get("turns", [])
+                        for turn in turns:
+                            for part in turn.get("parts", []):
+                                if "text" in part:
+                                    logger.info(f"📥 User: {part['text']}")
+                                    live_request_queue.send_content(types.Content(parts=[types.Part(text=part["text"])]))
+        except Exception as e:
+            logger.error(f"❌ Upstream error: {e}", exc_info=True)
+
+    async def downstream_task():
+        try:
+            logger.info("🚀 Starting Puck runner...")
+            async for event in puck_runner.run_live(
+                user_id=user_id,
+                session_id=session_id,
+                live_request_queue=live_request_queue,
+                run_config=run_config,
+            ):
+                # ✅ Трансформируем в Gemini Live API формат
+                transformed_events = transform_adk_to_gemini_format(event)
+                
+                for transformed_event in transformed_events:
+                    # ✅ Логируй ВЕСЬ JSON:
+                    logger.info(f"📨 Full event: {json.dumps(transformed_event)[:200]}")
+                    
+                    # Отправляй только если это валидное событие
+                    if transformed_event and transformed_event != {"type": "UNKNOWN"}:
+                        await websocket.send_text(json.dumps(transformed_event))
+        except Exception as e:
+            logger.error(f"❌ DOWNSTREAM ERROR: {e}", exc_info=True)
+
+    try:
+        await asyncio.gather(upstream_task(), downstream_task())
+    except Exception as e:
+        logger.error(f"❌ Socket error: {e}", exc_info=True)
+    finally:
+        live_request_queue.close()
 
 # MOUNT STATIC FILES
 # Mount avatars directory

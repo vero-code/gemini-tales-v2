@@ -105,7 +105,7 @@ class GeminiLiveAPI {
     this.model = model;
     this.modelUri = `projects/${this.projectId}/locations/us-central1/publishers/google/models/${this.model}`;
 
-    this.responseModalities = ["AUDIO"];
+    this.responseModalities = [{ modality: "AUDIO" }];
     this.systemInstructions = "";
     this.googleGrounding = false;
     this.enableAffectiveDialog = false; // Default affective dialog
@@ -119,6 +119,8 @@ class GeminiLiveAPI {
     this.functionsMap = {};
     this.previousImage = null;
     this.totalBytesSent = 0;
+
+    this.useADK = false;
 
     // Automatic activity detection settings with defaults
     this.automaticActivityDetection = {
@@ -158,6 +160,12 @@ class GeminiLiveAPI {
   setProjectId(projectId) {
     this.projectId = projectId;
     this.modelUri = `projects/${this.projectId}/locations/us-central1/publishers/google/models/${this.model}`;
+  }
+
+  formatResponseModalities(modalities) {
+    return modalities.map(m => 
+      typeof m === 'string' ? { modality: m } : m
+    );
   }
 
   setSystemInstructions(newSystemInstructions) {
@@ -241,7 +249,11 @@ class GeminiLiveAPI {
     this.webSocket.onopen = (event) => {
       this.connected = true;
       this.totalBytesSent = 0;
-      this.sendInitialSetupMessages();
+
+      if (!this.useADK) {
+        this.sendInitialSetupMessages();
+      }
+
       this.onConnectionStarted();
     };
 
@@ -270,7 +282,7 @@ class GeminiLiveAPI {
       setup: {
         model: this.modelUri,
         generation_config: {
-          response_modalities: this.responseModalities,
+          response_modalities: this.formatResponseModalities(this.responseModalities),
           temperature: this.temperature,
           speech_config: {
             voice_config: {
@@ -345,16 +357,22 @@ class GeminiLiveAPI {
   }
 
   sendRealtimeInputMessage(data, mime_type) {
-    const message = {
-      realtime_input: {
-        media_chunks: [
-          {
-            mime_type: mime_type,
-            data: data,
+    const message = this.useADK 
+      ? {
+          type: mime_type.includes("audio") ? "audio" : "image",
+          data: data,
+          mimeType: mime_type
+        }
+      : {
+          realtime_input: {
+            media_chunks: [
+              {
+                mime_type: mime_type,
+                data: data,
+              },
+            ],
           },
-        ],
-      },
-    };
+        };
     this.sendMessage(message);
     this.addToBytesSent(data);
   }
