@@ -1,6 +1,7 @@
 import logging
 import json
 import asyncio
+import base64
 from typing import List, Dict, Any
 from fastapi import APIRouter, WebSocket
 from google.adk.agents.live_request_queue import LiveRequestQueue
@@ -11,8 +12,11 @@ from google.genai import types
 
 # Import agents
 from app.agents.agent import root_agent as search_agent
+from google.genai.types import Modality
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 router = APIRouter()
 
 session_service = InMemorySessionService()
@@ -21,27 +25,36 @@ search_runner = Runner(app_name="search_adventure", agent=search_agent, session_
 def transform_adk_to_gemini_format(event) -> List[Dict]:
     """Converts ADK events to Gemini Live API format"""
     results = []
-    event_dict = json.loads(event.model_dump_json(exclude_none=True, by_alias=True))
-    
-    # 1. Output Transcription
-    if "outputTranscription" in event_dict:
+
+    ot = getattr(event, 'output_transcription', None)
+    if ot:
+        text = getattr(ot, 'text', "")
+        final = getattr(ot, 'final', False)
+        logger.info(f"📝 [ADK Event] Transcription: '{text}' (final: {final})")
         results.append({
             "type": "OUTPUT_TRANSCRIPTION",
-            "data": event_dict["outputTranscription"]
+            "data": {
+                "text": text,
+                "finished": final
+            }
         })
     
-    # 2. Audio
-    if "content" in event_dict and event_dict["content"]:
-        parts = event_dict["content"].get("parts", [])
+    content = getattr(event, 'content', None)
+    if content:
+        parts = getattr(content, 'parts', [])
         for part in parts:
-            if "inlineData" in part:
-                results.append({"type": "AUDIO", "data": part["inlineData"]["data"]})
-            elif "text" in part:
-                results.append({"type": "TEXT", "data": part["text"]})
-    
-    if not event_dict.get("partial"):
+            if hasattr(part, 'inline_data') and part.inline_data:
+                audio_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+                logger.info(f"🔊 [ADK Event] Audio part: {len(audio_base64)} chars")
+                results.append({"type": "AUDIO", "data": audio_base64})
+            elif hasattr(part, 'text') and part.text:
+                logger.info(f"💬 [ADK Event] Text part: '{part.text}'")
+                results.append({"type": "TEXT", "data": part.text})
+
+    if not getattr(event, 'partial', False):
+        logger.info("🏁 [ADK Event] Turn complete")
         results.append({"serverContent": {"turnComplete": True}})
-    
+
     return results
 
 @router.websocket("/search_live/{user_id}/{session_id}")
@@ -54,7 +67,12 @@ async def websocket_search_endpoint(websocket: WebSocket, user_id: str, session_
         await session_service.create_session(app_name="search_adventure", user_id=user_id, session_id=session_id)
 
     run_config = RunConfig(
-        streaming_mode=StreamingMode.BIDI
+        response_modalities=[Modality.AUDIO],
+        streaming_mode=StreamingMode.BIDI,
+        session_resumption=types.SessionResumptionConfig(),
+        speech_config=types.SpeechConfig(
+            voice_config=types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Puck"))
+        )
     )
 
     live_request_queue = LiveRequestQueue()

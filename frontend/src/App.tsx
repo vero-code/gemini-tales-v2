@@ -187,7 +187,10 @@ const App: React.FC = () => {
   }, [accumulatedStory, aiTranscription]);
 
   // --- UTILS ---
-  const logDebug = (msg: string) => setDebugInfo(prev => `${msg}\n${prev}`.slice(0, 1500));
+  const logDebug = (msg: string) => {
+    console.log(`[DEBUG] ${msg}`);
+    setDebugInfo(prev => `${msg}\n${prev}`.slice(0, 1500));
+  };
   
   const appendChat = (sender: string, text: string, type: string) => {
     setChatMessages(prev => {
@@ -364,12 +367,12 @@ const App: React.FC = () => {
   const connect = async () => {
     setAppState('STARTING');
     setConnectionStatus('Connecting...');
-    logDebug("Connecting to ADK Puck Agent...");
+    logDebug("Connecting to ADK Search Agent...");
 
     try {
         const sessionId = Math.random().toString(36).substring(7);
         const baseUrl = PROXY_URL.split('/ws/proxy')[0]; 
-        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}`;
+        const adkUrl = `${baseUrl}/ws/search_live/user1/${sessionId}`;
 
         console.log("Starting connection to ADK:", adkUrl);
         logDebug(`Target URL: ${adkUrl}`);
@@ -378,26 +381,16 @@ const App: React.FC = () => {
         client.useADK = true;
         liveClientRef.current = client;
 
-        client.systemInstructions = storyMode === 'agent' ? AGENT_SYSTEM_INSTRUCTION : SYSTEM_INSTRUCTION;
-        client.responseModalities = [
-            { modality: "AUDIO" },
-            { modality: "TEXT" }
-        ];
-        client.voiceName = "Puck";
+        // Backend ADK agent handles voice, instructions and modalities.
+        // We only need to tell the client to expect/send transcriptions.
         client.inputAudioTranscription = true;
         client.outputAudioTranscription = true;
 
-        // Register Tools
-        client.addFunction(new GenerateIllustrationTool((prompt: string) => generateNewIllustration(prompt)));
-        client.addFunction(new AwardBadgeTool((badgeId: string) => handleAwardBadge(badgeId)));
-        client.addFunction(new ShowChoiceTool((options: string[]) => setStoryChoices(options)));
-        client.addFunction(new TriggerBiometricTool(() => setShowBiometricLock(true)));
-
-
+        // From Python-server through WebSocket.
         client.onReceiveResponse = async (message: any) => {
+            console.log("Received message:", message);
             if (!message) return;
-    
-            // ✅ Проверяй ВСЕ возможные форматы
+
             const msgType = String(
                 message.type || 
                 (message.setupComplete ? 'SETUP_COMPLETE' : '') ||
@@ -405,7 +398,7 @@ const App: React.FC = () => {
                 ''
             ).toUpperCase().replace(" ", "_");
             
-            if (!msgType) return; // Если нет типа, пропусти
+            if (!msgType) return;
             
             logDebug(`📨 Received: ${msgType}`);
             
@@ -427,25 +420,28 @@ const App: React.FC = () => {
                     appendChat("GEMINI", delta, "transcript");
                 }
             } else if (msgType === 'AUDIO') {
-                logDebug(`🎙️ Got AUDIO event, data length: ${message.data?.length || 0}`);
+                const audioLen = message.data?.length || 0;
+                logDebug(`🎙️ AUDIO: Received ${audioLen} bytes of voice data`);
     
                 if (!audioPlayerRef.current) {
-                    logDebug("❌ AudioPlayer not initialized!");
+                    logDebug("❌ ERROR: AudioPlayer is NULL! Cannot play.");
                     return;
                 }
                 
                 if (!audioPlayerRef.current.isInitialized) {
-                    logDebug("❌ AudioPlayer not ready, re-initializing...");
+                    logDebug("🔄 AudioPlayer needs init, attempting...");
                     await audioPlayerRef.current.init();
                 }
                 
                 try {
+                    logDebug("🎵 Feeding audio to player queue...");
                     await audioPlayerRef.current.play(message.data);
-                    logDebug("✅ Audio played");
+                    logDebug("✅ Audio chunk played successfully");
                 } catch (err) {
-                    logDebug(`❌ Play error: ${err}`);
+                    logDebug(`❌ Playback error: ${err}`);
                 }
             } else if (msgType === 'TURN_COMPLETE') {
+                logDebug("🏁 TURN_COMPLETE: Gemini finished this sentence.");
                 setAiTranscription('');
                 setIsUserSpeaking(false);
             } else if (msgType === 'INTERRUPTED') {
@@ -460,52 +456,57 @@ const App: React.FC = () => {
                 logDebug("🛠️ Gemini is using a tool...");
                 const functionCalls = message.data?.functionCalls || [];
                 
-                functionCalls.forEach((fc: any) => {
-                   logDebug(`Calling tool: ${fc.name}`);
+                // functionCalls.forEach((fc: any) => {
+                //    logDebug(`Calling tool: ${fc.name}`);
                    
-                   let resultMsg = "Success";
-                   if (fc.name === 'generateIllustration') {
-                       generateNewIllustration(fc.args.prompt);
-                   } else if (fc.name === 'awardBadge') {
-                       handleAwardBadge(fc.args.badgeId);
-                   } else if (fc.name === 'showChoice') {
-                       setStoryChoices(fc.args.options);
-                   } else if (fc.name === 'triggerBiometric') {
-                       setPendingBiometricId(fc.id);
-                       setShowBiometricLock(true);
-                   }
+                //    let resultMsg = "Success";
+                //    if (fc.name === 'generateIllustration') {
+                //        generateNewIllustration(fc.args.prompt);
+                //    } else if (fc.name === 'awardBadge') {
+                //        handleAwardBadge(fc.args.badgeId);
+                //    } else if (fc.name === 'showChoice') {
+                //        setStoryChoices(fc.args.options);
+                //    } else if (fc.name === 'triggerBiometric') {
+                //        setPendingBiometricId(fc.id);
+                //        setShowBiometricLock(true);
+                //    }
                    
-                   // Respond immediately for everything EXCEPT triggerBiometric
-                   if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
-                       const correctPayload = {
-                           tool_response: {
-                               function_responses: [
-                                   {
-                                       id: fc.id,
-                                       response: { result: resultMsg }
-                                   }
-                               ]
-                           }
-                       };
-                       logDebug(`📤 Sending tool response for ${fc.name}...`);
-                       liveClientRef.current.sendMessage(correctPayload);
-                   }
-                });
+                //    // Respond immediately for everything EXCEPT triggerBiometric
+                //    if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
+                //        const correctPayload = {
+                //            tool_response: {
+                //                function_responses: [
+                //                    {
+                //                        id: fc.id,
+                //                        response: { result: resultMsg }
+                //                    }
+                //                ]
+                //            }
+                //        };
+                //        logDebug(`📤 Sending tool response for ${fc.name}...`);
+                //        liveClientRef.current.sendMessage(correctPayload);
+                //    }
+                // });
             }
         };
 
+        client.onConnectionStarted = () => {
+            logDebug("🔌 WebSocket: Socket Opened! Waiting for SETUP_COMPLETE...");
+        };
+
         client.onErrorMessage = (err: any) => {
-            logDebug("Socket Error: " + JSON.stringify(err));
+            logDebug(`🚨 WebSocket Error: ${JSON.stringify(err)}`);
             setConnectionStatus('Error');
             setAppState('ERROR');
             appendChat("SYSTEM", "Connection failed. Check backend!", "system");
         };
 
         client.onClose = () => {
-            logDebug("Socket Closed.");
+            logDebug("🌑 WebSocket: Socket Closed.");
             disconnect();
         };
 
+        logDebug("📡 Connection: Opening socket to backend...");
         client.connect();
 
         const player = new AudioPlayer();
