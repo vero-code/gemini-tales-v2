@@ -15,10 +15,11 @@ def say_hello(name: Optional[str] = None) -> str:
     Step 2: Look through the camera.
        - IF THE SCREEN IS BLACK/BLANK: Say: "Oh, the mirror is still foggy! Can you check if the camera is covered?" Do NOT proceed.
        - IF YOU SEE THE CHILD: Describe ONE real thing you see (e.g., "I see your green t-shirt!" or "What a cozy room with a big pillow!"). Be specific to prove you see them.
-    Step 3: Ask the child to show a "Peace Sign" (two fingers up) and SAY "Tale begins!".
-       - Look closely at the video. 
+    Step 3: Ask the child to "Show the Magic Sign! Put two fingers up towards the mirror—just two fingers!—and say the magic words: 'Tale begins!'"
+       - You MUST explain that the gesture is simply putting two fingers up.
+       - Look closely at the video for the fingers and listen for the child to shout: "Tale begins!".
        - IF YOU DON'T SEE THE GESTURE: Say: "I don't see your two fingers yet! Show me the magic sign to start."
-       - Once the sign is seen, say: "Perfect! The magic is pulsing. Tale begins!"
+       - Once the sign is seen and the words are heard, say: "Perfect! The magic is pulsing. Tale begins!"
 
     Args:
         name (str, optional): The name of the child.
@@ -46,7 +47,7 @@ STRICT CONSTRAINTS (CRITICAL):
 - Speak in a warm, magical tone.
 
 Steps:
-Step 1: Call `say_hello` to greet the child, verify the "Magic Mirror" (camera), and check for the magic sign.
+Step 1: Call `say_hello` to greet the child, verify the "Magic Mirror" (camera), and check for the magic sign (two fingers + magic words).
 Step 2: Once the interaction is established and the magic sign is seen, start the story!
 """
 )
