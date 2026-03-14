@@ -19,14 +19,7 @@ def get_generator():
 illustration_callbacks = []
 badge_callbacks = []
 
-async def draw_story_scene(scene_description: str) -> str:
-    """
-    Creates a magical watercolor illustration for the current story scene.
-    
-    Args:
-        scene_description: A detailed description of the scene to illustrate.
-    """
-    logger.info(f"🛠️ Tool call: draw_story_scene with description: {scene_description}")
+async def _generate_and_dispatch(scene_description: str):
     generator = get_generator()
     try:
         # Use to_thread to prevent blocking the main event loop while generating images
@@ -42,11 +35,22 @@ async def draw_story_scene(scene_description: str) -> str:
                 asyncio.create_task(cb(url))
             except Exception as e:
                 logger.error(f"Error calling illustration callback: {e}")
-                
-        return f"Illustration ready at: {url}"
     except Exception as e:
         logger.error(f"❌ Failed to generate illustration: {e}")
-        return f"Error drawing scene: {str(e)}"
+
+async def draw_story_scene(scene_description: str) -> str:
+    """
+    Creates a magical watercolor illustration for the current story scene.
+    
+    Args:
+        scene_description: A detailed description of the scene to illustrate.
+    """
+    logger.info(f"🛠️ Tool call: draw_story_scene with description: {scene_description}")
+    
+    loop = asyncio.get_running_loop()
+    loop.create_task(_generate_and_dispatch(scene_description))
+    
+    return "Illustration generation started in the background. You may continue the story."
 
 def do_physical_exercise(exercise_name: str, magic_word: str) -> str:
     """
