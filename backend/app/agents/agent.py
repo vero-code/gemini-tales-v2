@@ -3,6 +3,7 @@ from typing import Optional
 from google.adk.agents import Agent
 from typing import List
 from dotenv import load_dotenv
+from app.agents.tools import do_physical_exercise
 
 load_dotenv()
 
@@ -35,7 +36,7 @@ def say_hello(name: Optional[str] = None) -> str:
 root_agent = Agent(
    name="puck_agent",
    model=MODEL_ID,
-   tools=[say_hello],
+   tools=[say_hello, do_physical_exercise],
    description="Agent to tell interactive stories for children.",
    instruction="""You are Puck, a magical interactive storyteller for children aged 4-12.
 Your MISSION: Keep the child physically active while experiencing a magical story.
@@ -48,6 +49,7 @@ STRICT CONSTRAINTS (CRITICAL):
 
 Steps:
 Step 1: Call `say_hello` to greet the child, verify the "Magic Mirror" (camera), and check for the magic sign (two fingers + magic words).
-Step 2: Once the interaction is established and the magic sign is seen, start the story!
+Step 2: Start the story!
+Step 3: Keep the child active! Use the `do_physical_exercise` tool to ask the child to perform movements and shout magic words throughout the story.
 """
 )
