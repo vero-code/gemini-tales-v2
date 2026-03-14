@@ -110,7 +110,9 @@ const App: React.FC = () => {
   const [lastAwarded, setLastAwarded] = useState<Achievement | null>(null);
   const [storyChoices, setStoryChoices] = useState<string[]>([]);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
-  const [accumulatedStory, setAccumulatedStory] = useState('');
+  const [accumulatedStory, setAccumulatedStory] = useState<string[]>([]);
+  const pendingStoryRef = useRef<string>('');
+  const storyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- MODE STATE ---
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
@@ -454,31 +456,39 @@ const App: React.FC = () => {
                 // Ignored - we use OUTPUT_TRANSCRIPTION for text deltas to avoid duplication!
             } else if (msgType === 'TURN COMPLETE') {
                 logDebug("🏁 TURN_COMPLETE: Gemini finished this sentence.");
-                aiTranscriptRef.current = ""; // Reset for next turn
-                
-                // Commit the final transcription to accumulated story
-                setAiTranscription(currentAiText => {
-                    setAccumulatedStory(prev => {
-                        if (!currentAiText) return prev;
-                        if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !currentAiText.startsWith(' ')) {
-                            return prev + ' ' + currentAiText;
-                        }
-                        return prev + currentAiText;
-                    });
-                    return ''; // clear aiTranscription
-                });
 
-                // Finalize the chat bubble
+                const fragment = aiTranscriptRef.current.trim();
+                aiTranscriptRef.current = "";
+
+                if (fragment) {
+                    if (fragment.length > pendingStoryRef.current.length) {
+                        pendingStoryRef.current = fragment;
+                    }
+                }
+
+                if (storyDebounceRef.current) clearTimeout(storyDebounceRef.current);
+                storyDebounceRef.current = setTimeout(() => {
+                    const paragraph = pendingStoryRef.current.trim();
+                    if (paragraph) {
+                        setAccumulatedStory(prev => {
+                            if (prev.length > 0 && prev[prev.length - 1] === paragraph) return prev;
+                            return [...prev, paragraph].slice(-20);
+                        });
+                    }
+                    pendingStoryRef.current = '';
+                }, 1500);
+
+                setAiTranscription('');
+
                 setChatMessages(prev => {
                     const newArr = [...prev];
                     const last = newArr[newArr.length - 1];
                     if (last && last.sender === 'GEMINI' && last.type === 'transcript') {
                         newArr[newArr.length - 1] = { ...last, type: 'text' };
-                        return newArr;
                     }
                     return newArr;
                 });
-                
+
                 setIsUserSpeaking(false);
             } else if (msgType === 'INTERRUPTED') {
                 aiTranscriptRef.current = ""; // Reset
@@ -502,29 +512,7 @@ const App: React.FC = () => {
                    } else if (fc.name === 'awardBadge' || fc.name === 'award_badge') {
                        const id = fc.args.badgeId || fc.args.badge_id || fc.args.badgeid || fc.args.badge;
                        handleAwardBadge(id);
-                  //  } else if (fc.name === 'showChoice') {
-                  //      setStoryChoices(fc.args.options);
-                  //  } else if (fc.name === 'triggerBiometric') {
-                  //      setPendingBiometricId(fc.id);
-                  //      setShowBiometricLock(true);
                    }
-                   
-                   // ADK handles tool responses automatically on the backend!
-                   // Respond immediately for everything EXCEPT triggerBiometric
-                  //  if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
-                  //      const correctPayload = {
-                  //          tool_response: {
-                  //              function_responses: [
-                  //                  {
-                  //                      id: fc.id,
-                  //                      response: { result: resultMsg }
-                  //                  }
-                  //              ]
-                  //          }
-                  //      };
-                  //      logDebug(`📤 Sending tool response for ${fc.name}...`);
-                  //      liveClientRef.current.sendMessage(correctPayload);
-                  //  }
                 });
             } else if (msgType === 'ILLUSTRATION') {
                 logDebug(`🎨 New illustration received: ${message.data.url}`);
@@ -589,10 +577,13 @@ const App: React.FC = () => {
     setCurrentIllustration(null);
     setVideoUrl(null);
     setStoryChoices([]);
-    setAccumulatedStory('');
+    setAccumulatedStory([]);
     setAiTranscription('');
     resetAgentStory();
     logDebug("Disconnected from Gemini.");
+
+    if (storyDebounceRef.current) clearTimeout(storyDebounceRef.current);
+    pendingStoryRef.current = '';
   };
 
   const toggleAudio = async () => {
@@ -728,9 +719,24 @@ const App: React.FC = () => {
               ref={storyContainerRef}
               className="bg-white/95 h-48 p-8 border-t border-white/50 backdrop-blur-xl overflow-y-auto scroll-smooth flex-shrink-0"
             >
-              <p className="text-purple-950 text-2xl font-medium leading-relaxed italic text-center">
-                {formatStoryText(accumulatedStory || aiTranscription) || (appState === 'STORYTELLING' ? "The magic is brewing..." : "Your story awaits")}
-              </p>
+              {accumulatedStory.length === 0 && !aiTranscription ? (
+                <p className="text-gray-400 italic text-center text-xl">
+                  {appState === 'STORYTELLING' ? "The magic is brewing..." : "Your story awaits"}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {accumulatedStory.map((turn, i) => (
+                    <p key={i} className="text-purple-950 text-xl font-medium leading-relaxed italic">
+                      {formatStoryText(turn)}
+                    </p>
+                  ))}
+                  {aiTranscription && (
+                    <p className="text-purple-400 text-xl font-medium leading-relaxed italic">
+                      {formatStoryText(aiTranscription)}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
