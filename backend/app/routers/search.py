@@ -99,9 +99,20 @@ async def websocket_search_endpoint(websocket: WebSocket, user_id: str, session_
                 if "bytes" in message:
                     live_request_queue.send_realtime(types.Blob(mime_type="audio/pcm;rate=16000", data=message["bytes"]))
                 elif "text" in message:
-                    data = json.loads(message["text"])
-                    if "text" in data:
-                        live_request_queue.send_content(types.Content(parts=[types.Part(text=data["text"])]))
+                    try:
+                        data = json.loads(message["text"])
+                        msg_type = data.get("type", "")
+                        
+                        if msg_type == "audio":
+                            audio_data = base64.b64decode(data["data"])
+                            live_request_queue.send_realtime(types.Blob(mime_type="audio/pcm;rate=16000", data=audio_data))
+                        elif msg_type == "image":
+                            image_data = base64.b64decode(data["data"])
+                            live_request_queue.send_realtime(types.Blob(mime_type="image/jpeg", data=image_data))
+                        elif "text" in data:
+                            live_request_queue.send_content(types.Content(parts=[types.Part(text=data["text"])]))
+                    except Exception as e:
+                        logger.error(f"Error parsing upstream JSON: {e}")
         except Exception as e:
             if "disconnect" not in str(e).lower():
                 logger.error(f"❌ Search Upstream error: {e}")
