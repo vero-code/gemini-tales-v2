@@ -23,34 +23,48 @@ session_service = InMemorySessionService()
 search_runner = Runner(app_name="search_adventure", agent=search_agent, session_service=session_service)
 
 def transform_adk_to_gemini_format(event) -> List[Dict]:
-    """Converts ADK events to Gemini Live API format"""
+    """Converts ADK events to official Gemini Live API format for frontend compatibility"""
     results = []
 
+    # 1. Transcription (keep as is or wrap)
     ot = getattr(event, 'output_transcription', None)
     if ot:
         text = getattr(ot, 'text', "")
         final = getattr(ot, 'final', False)
         logger.info(f"📝 [ADK Event] Transcription: '{text}' (final: {final})")
         results.append({
-            "type": "OUTPUT_TRANSCRIPTION",
-            "data": {
-                "text": text,
-                "finished": final
+            "serverContent": {
+                "outputTranscription": {
+                    "text": text,
+                    "finished": final
+                }
             }
         })
     
+    # 2. Content (Audio/Text) -> Wrap in official modelTurn structure
     content = getattr(event, 'content', None)
     if content:
         parts = getattr(content, 'parts', [])
+        gemini_parts = []
         for part in parts:
             if hasattr(part, 'inline_data') and part.inline_data:
                 audio_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
                 logger.info(f"🔊 [ADK Event] Audio part: {len(audio_base64)} chars")
-                results.append({"type": "AUDIO", "data": audio_base64})
+                gemini_parts.append({"inlineData": {"data": audio_base64, "mimeType": "audio/pcm;rate=16000"}})
             elif hasattr(part, 'text') and part.text:
                 logger.info(f"💬 [ADK Event] Text part: '{part.text}'")
-                results.append({"type": "TEXT", "data": part.text})
+                gemini_parts.append({"text": part.text})
+        
+        if gemini_parts:
+            results.append({
+                "serverContent": {
+                    "modelTurn": {
+                        "parts": gemini_parts
+                    }
+                }
+            })
 
+    # 3. Turn Complete
     if not getattr(event, 'partial', False):
         logger.info("🏁 [ADK Event] Turn complete")
         results.append({"serverContent": {"turnComplete": True}})

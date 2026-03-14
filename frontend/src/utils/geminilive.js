@@ -106,12 +106,10 @@ class GeminiLiveAPI {
     this.modelUri = `projects/${this.projectId}/locations/us-central1/publishers/google/models/${this.model}`;
 
     this.responseModalities = [{ modality: "AUDIO" }];
-    this.systemInstructions = "";
     this.googleGrounding = false;
-    this.enableAffectiveDialog = false; // Default affective dialog
-    this.voiceName = "Puck"; // Default voice
-    this.temperature = 1.0; // Default temperature
-    this.proactivity = { proactiveAudio: false }; // Proactivity config
+    this.enableAffectiveDialog = false; 
+    this.temperature = 1.0; 
+    this.proactivity = { proactiveAudio: false }; 
     this.inputAudioTranscription = false;
     this.outputAudioTranscription = false;
     this.enableFunctionCalls = false;

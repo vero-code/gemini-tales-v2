@@ -388,28 +388,22 @@ const App: React.FC = () => {
 
         // From Python-server through WebSocket.
         client.onReceiveResponse = async (message: any) => {
-            console.log("Received message:", message);
-            if (!message) return;
+            const msgType = message.type;
+            const data = message.data;
 
-            const msgType = String(
-                message.type || 
-                (message.setupComplete ? 'SETUP_COMPLETE' : '') ||
-                (message.serverContent?.turnComplete ? 'TURN_COMPLETE' : '') ||
-                ''
-            ).toUpperCase().replace(" ", "_");
-            
             if (!msgType) return;
             
-            logDebug(`📨 Received: ${msgType}`);
+            logDebug(`📨 [WS Receive] ${msgType}`);
             
-            if (msgType === 'SETUP_COMPLETE') {
+            if (msgType === 'SETUP COMPLETE') {
               setConnectionStatus('Connected');
               setAppState('STORYTELLING');
               appendChat("SYSTEM", "Setup Complete. Ready!", "system");
-              logDebug("Setup complete! Magic is starting.");
+              logDebug("✨ Protocol Synchronized! Puck is awake.");
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
-                if (!message.data?.finished) {
-                    const delta = message.data.text;
+                if (data && !data.finished) {
+                    const delta = data.text;
+                    logDebug(`📝 AI is speaking: "${delta.substring(0, 20)}..."`);
                     setAiTranscription(prev => prev + delta);
                     setAccumulatedStory(prev => {
                         if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !delta.startsWith(' ')) {
@@ -420,11 +414,11 @@ const App: React.FC = () => {
                     appendChat("GEMINI", delta, "transcript");
                 }
             } else if (msgType === 'AUDIO') {
-                const audioLen = message.data?.length || 0;
+                const audioLen = data?.length || 0;
                 logDebug(`🎙️ AUDIO: Received ${audioLen} bytes of voice data`);
     
                 if (!audioPlayerRef.current) {
-                    logDebug("❌ ERROR: AudioPlayer is NULL! Cannot play.");
+                    logDebug("❌ ERROR: AudioPlayer is NULL!");
                     return;
                 }
                 
@@ -434,13 +428,20 @@ const App: React.FC = () => {
                 }
                 
                 try {
-                    logDebug("🎵 Feeding audio to player queue...");
-                    await audioPlayerRef.current.play(message.data);
-                    logDebug("✅ Audio chunk played successfully");
+                    if (audioLen > 0) {
+                        logDebug("🎵 Feeding audio to player queue...");
+                        await audioPlayerRef.current.play(data);
+                        logDebug("✅ Audio chunk played successfully");
+                    } else {
+                        logDebug("⚠️ Received empty AUDIO chunk");
+                    }
                 } catch (err) {
                     logDebug(`❌ Playback error: ${err}`);
                 }
-            } else if (msgType === 'TURN_COMPLETE') {
+            } else if (msgType === 'TEXT') {
+                logDebug(`💬 TEXT: Received text from AI: "${data?.substring(0, 30)}..."`);
+                appendChat("GEMINI", data, "text");
+            } else if (msgType === 'TURN COMPLETE') {
                 logDebug("🏁 TURN_COMPLETE: Gemini finished this sentence.");
                 setAiTranscription('');
                 setIsUserSpeaking(false);
