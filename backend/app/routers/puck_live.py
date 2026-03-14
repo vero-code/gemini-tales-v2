@@ -14,7 +14,7 @@ from google.genai import types
 
 from app.agents.agent import root_agent as puck_agent
 from google.genai.types import Modality
-from app.agents.tools import illustration_callbacks
+from app.agents.tools import illustration_callbacks, badge_callbacks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -131,7 +131,25 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
         except Exception as e:
             logger.error(f"Error sending illustration via websocket: {e}")
             
+    async def send_badge(badge_id: str):
+        try:
+            logger.info(f"🏅 [WebSocket] Pushing badge DIRECTLY to frontend: {badge_id}")
+            # The frontend expects a TOOL_CALL with name awardBadge
+            await websocket.send_text(json.dumps({
+                "type": "TOOL_CALL",
+                "data": {
+                    "functionCalls": [{
+                        "name": "awardBadge",
+                        "args": {"badgeId": badge_id},
+                        "id": str(uuid.uuid4())
+                    }]
+                }
+            }))
+        except Exception as e:
+            logger.error(f"Error sending badge via websocket: {e}")
+
     illustration_callbacks.append(send_illustration)
+    badge_callbacks.append(send_badge)
 
     session = await session_service.get_session(app_name="puck_adventure", user_id=user_id, session_id=session_id)
     if not session:
@@ -196,4 +214,8 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
     try:
         await asyncio.gather(upstream_task(), downstream_task())
     finally:
+        if send_illustration in illustration_callbacks:
+            illustration_callbacks.remove(send_illustration)
+        if send_badge in badge_callbacks:
+            badge_callbacks.remove(send_badge)
         live_request_queue.close()

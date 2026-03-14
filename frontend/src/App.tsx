@@ -458,13 +458,14 @@ const App: React.FC = () => {
                 const functionCalls = message.data?.functionCalls || [];
                 
                 functionCalls.forEach((fc: any) => {
-                   logDebug(`Calling tool: ${fc.name}`);
+                   logDebug(`🛠️ Calling tool: ${fc.name} with arguments: ${JSON.stringify(fc.args)}`);
                    
                    let resultMsg = "Success";
                    if (fc.name === 'generateIllustration') {
                        generateNewIllustration(fc.args.prompt);
-                  //  } else if (fc.name === 'awardBadge') {
-                  //      handleAwardBadge(fc.args.badgeId);
+                   } else if (fc.name === 'awardBadge' || fc.name === 'award_badge') {
+                       const id = fc.args.badgeId || fc.args.badge_id || fc.args.badgeid || fc.args.badge;
+                       handleAwardBadge(id);
                   //  } else if (fc.name === 'showChoice') {
                   //      setStoryChoices(fc.args.options);
                   //  } else if (fc.name === 'triggerBiometric') {
@@ -472,21 +473,22 @@ const App: React.FC = () => {
                   //      setShowBiometricLock(true);
                    }
                    
+                   // ADK handles tool responses automatically on the backend!
                    // Respond immediately for everything EXCEPT triggerBiometric
-                   if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
-                       const correctPayload = {
-                           tool_response: {
-                               function_responses: [
-                                   {
-                                       id: fc.id,
-                                       response: { result: resultMsg }
-                                   }
-                               ]
-                           }
-                       };
-                       logDebug(`📤 Sending tool response for ${fc.name}...`);
-                       liveClientRef.current.sendMessage(correctPayload);
-                   }
+                  //  if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
+                  //      const correctPayload = {
+                  //          tool_response: {
+                  //              function_responses: [
+                  //                  {
+                  //                      id: fc.id,
+                  //                      response: { result: resultMsg }
+                  //                  }
+                  //              ]
+                  //          }
+                  //      };
+                  //      logDebug(`📤 Sending tool response for ${fc.name}...`);
+                  //      liveClientRef.current.sendMessage(correctPayload);
+                  //  }
                 });
             } else if (msgType === 'ILLUSTRATION') {
                 logDebug(`🎨 New illustration received: ${message.data.url}`);

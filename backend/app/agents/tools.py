@@ -17,6 +17,7 @@ def get_generator():
 
 # Global callbacks for notifying the frontend
 illustration_callbacks = []
+badge_callbacks = []
 
 async def draw_story_scene(scene_description: str) -> str:
     """
@@ -57,3 +58,24 @@ def do_physical_exercise(exercise_name: str, magic_word: str) -> str:
     """
     logger.info(f"🛠️ Tool call: do_physical_exercise - {exercise_name} with magic word: {magic_word}")
     return f"Exercise started: {exercise_name} with word {magic_word}"
+
+def awardBadge(badgeId: str) -> str:
+    """
+    Awards a magical badge to the child for completing a physical challenge.
+    
+    Args:
+        badgeId: The ID of the badge to award. Must be one of:
+                 'bunny_hop', 'wizard_wave', 'curious_explorer', 'graceful_leaf', 'story_lover'
+    """
+    logger.info(f"🛠️ Tool call: awardBadge - awarding {badgeId}")
+    
+    # Dispatch to any active websockets
+    for cb in badge_callbacks:
+        try:
+            # We are not in an async context here, so we must schedule it on the loop
+            loop = asyncio.get_running_loop()
+            loop.create_task(cb(badgeId))
+        except Exception as e:
+            logger.error(f"Error calling badge callback: {e}")
+            
+    return f"Badge {badgeId} awarded successfully!"
