@@ -2,6 +2,8 @@ import logging
 import json
 import asyncio
 import base64
+import re
+import uuid
 from typing import List, Dict, Any
 from fastapi import APIRouter, WebSocket
 from google.adk.agents.live_request_queue import LiveRequestQueue
@@ -64,7 +66,45 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
                 }
             })
 
-    # 3. Turn Complete
+    # 3. Tool Calls (Forward to frontend if any)
+    tool_calls = getattr(event, 'tool_calls', None)
+    if tool_calls:
+        gemini_tool_calls = []
+        for tc in tool_calls:
+            # Try to handle both direct and nested structure
+            fc = getattr(tc, 'function_call', tc)
+            gemini_tool_calls.append({
+                "name": getattr(fc, 'name', 'unknown'),
+                "args": getattr(fc, 'args', {}),
+                "id": getattr(fc, 'id', str(uuid.uuid4()))
+            })
+        if gemini_tool_calls:
+            logger.info(f"🛠️ [ADK Event] Forwarding {len(gemini_tool_calls)} tool calls")
+            results.append({
+                "type": "TOOL_CALL",
+                "data": {
+                    "functionCalls": gemini_tool_calls
+                }
+            })
+
+    # 4. Tool Responses (Forward results like URLs to frontend)
+    tool_responses = getattr(event, 'tool_responses', None)
+    if tool_responses:
+        for tr in tool_responses:
+            # Handle list of function responses
+            f_responses = getattr(tr, 'function_responses', [])
+            for fr in f_responses:
+                response_val = getattr(fr, 'response', {})
+                if isinstance(response_val, dict):
+                    result_text = str(response_val.get('result', ''))
+                    if "/avatars/" in result_text:
+                        match = re.search(r'(/avatars/[a-zA-Z0-9_\-\.]+\.png)', result_text)
+                        if match:
+                            url = match.group(1)
+                            logger.info(f"🎨 [ADK Event] Detected illustration URL in tool response: {url}")
+                            results.append({"type": "ILLUSTRATION", "data": {"url": url}})
+
+    # 5. Turn Complete
     if not getattr(event, 'partial', False):
         logger.info("🏁 [ADK Event] Turn complete")
         results.append({"serverContent": {"turnComplete": True}})
@@ -119,7 +159,7 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
 
     async def downstream_task():
         try:
-            await websocket.send_text(json.dumps({"type": "SETUP_COMPLETE", "setupComplete": True}))
+            await websocket.send_text(json.dumps({"type": "SETUP COMPLETE", "setupComplete": True}))
             logger.info("✅ Green light sent to frontend! Waiting for reaction...")
 
             async for event in puck_runner.run_live(
@@ -129,6 +169,8 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
                 run_config=run_config,
             ):
                 transformed_events = transform_adk_to_gemini_format(event)
+                # Log event for debugging tool calls
+                # logger.info(f"DEBUG: ADK Event: {event}")
                 for transformed_event in transformed_events:
                     await websocket.send_text(json.dumps(transformed_event))
         except Exception as e:

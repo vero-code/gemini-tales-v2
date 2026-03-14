@@ -30,7 +30,10 @@ class MultimodalLiveResponseMessage {
     const parts = data?.serverContent?.modelTurn?.parts;
 
     try {
-      if (data?.setupComplete) {
+      if (data?.type) {
+        this.type = data.type === "SETUP_COMPLETE" ? "SETUP COMPLETE" : data.type;
+        this.data = data.data;
+      } else if (data?.setupComplete) {
         this.type = MultimodalLiveResponseType.SETUP_COMPLETE;
       } else if (data?.serverContent?.turnComplete) {
         this.type = MultimodalLiveResponseType.TURN_COMPLETE;
