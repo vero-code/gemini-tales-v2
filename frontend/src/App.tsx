@@ -148,6 +148,7 @@ const App: React.FC = () => {
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
   const videoStreamerRef = useRef<VideoStreamer | null>(null);
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
+  const aiTranscriptRef = useRef<string>("");
 
   // --- DEVICE MANAGEMENT ---
   const fetchDevices = async () => {
@@ -195,14 +196,25 @@ const App: React.FC = () => {
   const appendChat = (sender: string, text: string, type: string) => {
     setChatMessages(prev => {
       const last = prev[prev.length - 1];
-      if (last && last.sender === sender && type === 'transcript') {
+      
+      if (last && last.sender === sender && sender === 'GEMINI' && type === 'transcript') {
         const newArr = [...prev];
-        newArr[newArr.length - 1] = {
-           ...last,
-           text: last.text + text
-        };
+        const oldText = last.text;
+
+        let newText = text;
+
+        if (text.startsWith(oldText)) {
+            newText = text;
+        } else if (oldText.startsWith(text)) {
+            newText = oldText;
+        } else {
+            newText = text;
+        }
+
+        newArr[newArr.length - 1] = { ...last, text: newText };
         return newArr;
       }
+
       return [...prev, { sender, text, type }];
     });
   };
@@ -401,17 +413,17 @@ const App: React.FC = () => {
               appendChat("SYSTEM", "Setup Complete. Ready!", "system");
               logDebug("✨ Protocol Synchronized! Puck is awake.");
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
-                if (data && !data.finished) {
-                    const delta = data.text;
-                    logDebug(`📝 AI is speaking: "${delta.substring(0, 20)}..."`);
-                    setAiTranscription(prev => prev + delta);
-                    setAccumulatedStory(prev => {
-                        if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !delta.startsWith(' ')) {
-                            return prev + ' ' + delta;
-                        }
-                        return prev + delta;
-                    });
-                    appendChat("GEMINI", delta, "transcript");
+                if (data && typeof data.text === 'string') {
+                    const fullText = data.text;
+                    const prevText = aiTranscriptRef.current;
+                    
+                    if (fullText.length > prevText.length) {
+                        const delta = fullText.substring(prevText.length);
+                        aiTranscriptRef.current = fullText;
+                        
+                        setAiTranscription(fullText);
+                        appendChat("GEMINI", delta, "transcript");
+                    }
                 }
             } else if (msgType === 'AUDIO') {
                 const audioLen = data?.length || 0;
@@ -439,13 +451,37 @@ const App: React.FC = () => {
                     logDebug(`❌ Playback error: ${err}`);
                 }
             } else if (msgType === 'TEXT') {
-                logDebug(`💬 TEXT: Received text from AI: "${data?.substring(0, 30)}..."`);
-                appendChat("GEMINI", data, "text");
+                // Ignored - we use OUTPUT_TRANSCRIPTION for text deltas to avoid duplication!
             } else if (msgType === 'TURN COMPLETE') {
                 logDebug("🏁 TURN_COMPLETE: Gemini finished this sentence.");
-                setAiTranscription('');
+                aiTranscriptRef.current = ""; // Reset for next turn
+                
+                // Commit the final transcription to accumulated story
+                setAiTranscription(currentAiText => {
+                    setAccumulatedStory(prev => {
+                        if (!currentAiText) return prev;
+                        if (prev && !prev.endsWith(' ') && !prev.endsWith('\n') && !currentAiText.startsWith(' ')) {
+                            return prev + ' ' + currentAiText;
+                        }
+                        return prev + currentAiText;
+                    });
+                    return ''; // clear aiTranscription
+                });
+
+                // Finalize the chat bubble
+                setChatMessages(prev => {
+                    const newArr = [...prev];
+                    const last = newArr[newArr.length - 1];
+                    if (last && last.sender === 'GEMINI' && last.type === 'transcript') {
+                        newArr[newArr.length - 1] = { ...last, type: 'text' };
+                        return newArr;
+                    }
+                    return newArr;
+                });
+                
                 setIsUserSpeaking(false);
             } else if (msgType === 'INTERRUPTED') {
+                aiTranscriptRef.current = ""; // Reset
                 setAiTranscription('(Story paused...)');
                 setStoryChoices([]);
                 appendChat("SYSTEM", "[Interrupted]", "system");

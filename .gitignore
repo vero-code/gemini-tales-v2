@@ -198,4 +198,4 @@ my_env.tfvars
 .adk
 session.db
 
-app/temp_avatars
+backend/app/temp_avatars
