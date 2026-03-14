@@ -12,9 +12,9 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-# Import agents
 from app.agents.agent import root_agent as puck_agent
 from google.genai.types import Modality
+from app.agents.tools import illustration_callbacks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,11 +97,13 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
                 response_val = getattr(fr, 'response', {})
                 if isinstance(response_val, dict):
                     result_text = str(response_val.get('result', ''))
+                    logger.info(f"🔎 [ADK Event] Checking tool response result content: {result_text}")
                     if "/avatars/" in result_text:
-                        match = re.search(r'(/avatars/[a-zA-Z0-9_\-\.]+\.png)', result_text)
+                        # Improved regex to catch the URL more reliably
+                        match = re.search(r'(/avatars/[\w\-\.]+\.(png|jpg|jpeg|webp|mp4))', result_text)
                         if match:
                             url = match.group(1)
-                            logger.info(f"🎨 [ADK Event] Detected illustration URL in tool response: {url}")
+                            logger.info(f"🎨 [ADK Event] Pushing illustration URL to frontend: {url}")
                             results.append({"type": "ILLUSTRATION", "data": {"url": url}})
 
     # 5. Turn Complete
@@ -109,12 +111,27 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
         logger.info("🏁 [ADK Event] Turn complete")
         results.append({"serverContent": {"turnComplete": True}})
 
+    if results:
+        logger.info(f"📤 [ADK Event] Sending {len(results)} messages to frontend: {[r.get('type') or r for r in results]}")
     return results
 
 @router.websocket("/puck_live/{user_id}/{session_id}")
 async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id: str):
     await websocket.accept()
     logger.info(f"🔍 Puck Agent Connected: {user_id}/{session_id}")
+
+    # Callback to send illustration directly when it's generated
+    async def send_illustration(url: str):
+        try:
+            logger.info(f"🎨 [WebSocket] Pushing illustration DIRECTLY to frontend: {url}")
+            await websocket.send_text(json.dumps({
+                "type": "ILLUSTRATION", 
+                "data": {"url": url}
+            }))
+        except Exception as e:
+            logger.error(f"Error sending illustration via websocket: {e}")
+            
+    illustration_callbacks.append(send_illustration)
 
     session = await session_service.get_session(app_name="puck_adventure", user_id=user_id, session_id=session_id)
     if not session:

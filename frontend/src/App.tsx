@@ -457,42 +457,53 @@ const App: React.FC = () => {
                 logDebug("🛠️ Gemini is using a tool...");
                 const functionCalls = message.data?.functionCalls || [];
                 
-                // functionCalls.forEach((fc: any) => {
-                //    logDebug(`Calling tool: ${fc.name}`);
+                functionCalls.forEach((fc: any) => {
+                   logDebug(`Calling tool: ${fc.name}`);
                    
-                //    let resultMsg = "Success";
-                //    if (fc.name === 'generateIllustration') {
-                //        generateNewIllustration(fc.args.prompt);
-                //    } else if (fc.name === 'awardBadge') {
-                //        handleAwardBadge(fc.args.badgeId);
-                //    } else if (fc.name === 'showChoice') {
-                //        setStoryChoices(fc.args.options);
-                //    } else if (fc.name === 'triggerBiometric') {
-                //        setPendingBiometricId(fc.id);
-                //        setShowBiometricLock(true);
-                //    }
+                   let resultMsg = "Success";
+                   if (fc.name === 'generateIllustration') {
+                       generateNewIllustration(fc.args.prompt);
+                  //  } else if (fc.name === 'awardBadge') {
+                  //      handleAwardBadge(fc.args.badgeId);
+                  //  } else if (fc.name === 'showChoice') {
+                  //      setStoryChoices(fc.args.options);
+                  //  } else if (fc.name === 'triggerBiometric') {
+                  //      setPendingBiometricId(fc.id);
+                  //      setShowBiometricLock(true);
+                   }
                    
-                //    // Respond immediately for everything EXCEPT triggerBiometric
-                //    if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
-                //        const correctPayload = {
-                //            tool_response: {
-                //                function_responses: [
-                //                    {
-                //                        id: fc.id,
-                //                        response: { result: resultMsg }
-                //                    }
-                //                ]
-                //            }
-                //        };
-                //        logDebug(`📤 Sending tool response for ${fc.name}...`);
-                //        liveClientRef.current.sendMessage(correctPayload);
-                //    }
-                // });
+                   // Respond immediately for everything EXCEPT triggerBiometric
+                   if (fc.name !== 'triggerBiometric' && liveClientRef.current) {
+                       const correctPayload = {
+                           tool_response: {
+                               function_responses: [
+                                   {
+                                       id: fc.id,
+                                       response: { result: resultMsg }
+                                   }
+                               ]
+                           }
+                       };
+                       logDebug(`📤 Sending tool response for ${fc.name}...`);
+                       liveClientRef.current.sendMessage(correctPayload);
+                   }
+                });
+            } else if (msgType === 'ILLUSTRATION') {
+                logDebug(`🎨 New illustration received: ${message.data.url}`);
+                // Extract base URL from proxy URL (e.g., http://localhost:8000)
+                const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+                const fullUrl = message.data.url.startsWith('http') ? message.data.url : backendUrl + message.data.url;
+                
+                logDebug(`🖼️ Rendering full illustration URL: ${fullUrl}`);
+                setVideoUrl(null);
+                setCurrentIllustration(fullUrl);
+                setAppState('STORYTELLING'); // Ensure we are out of IDLE/LOADING
             }
         };
 
         client.onConnectionStarted = () => {
             logDebug("🔌 WebSocket: Socket Opened! Waiting for SETUP_COMPLETE...");
+            setAppState('STORYTELLING'); // Set to started when socket opens
         };
 
         client.onErrorMessage = (err: any) => {
@@ -644,10 +655,12 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col gap-6">
           <div className="glass-card rounded-[40px] overflow-hidden flex-1 shadow-xl flex flex-col relative min-h-[400px] bg-white/60 border border-white/50 backdrop-blur-md">
             <div className="flex-1 bg-white/20 flex items-center justify-center relative">
-              {videoUrl ? (
-                <video src={videoUrl} autoPlay loop muted className="w-full h-full object-cover animate-in fade-in duration-1000" />
-              ) : currentIllustration ? (
-                <img src={currentIllustration} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Story Scene" />
+              {currentIllustration ? (
+                <img src={currentIllustration || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Story Scene" />
+              ) : videoUrl ? (
+                <video src={videoUrl || undefined} autoPlay loop muted className="w-full h-full object-cover animate-in fade-in duration-1000" />
+              ) : (actionUrl || avatarUrl) ? (
+                <img src={actionUrl || avatarUrl || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Puck" />
               ) : (
                 <div className="text-center p-12 space-y-6">
                   {appState === 'IDLE' ? (
@@ -883,7 +896,7 @@ const App: React.FC = () => {
                     {avatarUrl && (
                         <div className="pt-4 border-t border-purple-100 animate-in slide-in-from-top-4">
                             <div className="mb-4 rounded-2xl overflow-hidden border-2 border-purple-200 shadow-sm aspect-square bg-white">
-                                <img src={actionUrl || avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                                <img src={actionUrl || avatarUrl || undefined} alt="Avatar Preview" className="w-full h-full object-cover" />
                             </div>
                             <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintaining Puck's look)</label>
                             <div className="flex gap-2">

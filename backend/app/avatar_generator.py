@@ -55,6 +55,50 @@ class StoryAvatarGenerator:
         self.output_dir = os.path.join(os.path.dirname(__file__), "temp_avatars")
         os.makedirs(self.output_dir, exist_ok=True)
 
+    def generate_scene_illustration(self, scene_description: str) -> str:
+        """
+        Generates a full scene illustration for the story.
+        
+        Args:
+            scene_description: Text description of the scene to illustrate.
+            
+        Returns:
+            Path to the saved scene image.
+        """
+        prompt = f"""Create a magical fairytale scene illustration.
+        
+        Scene description: {scene_description}
+
+CRITICAL STYLE REQUIREMENTS:
+- Art style: Watercolor, whimsical children's book illustration
+- Soft textures, gentle brushstrokes, and a warm color palette
+- Composition: Full landscape scene
+- Lighting: Magical, atmospheric lighting
+- Feel: Enchanting and safe for children
+
+The illustration should capture the mood of the story: {scene_description}"""
+
+        logger.info(f"🎨 Generating scene illustration: {scene_description}...")
+        
+        # Add retry logic for 429 Errors
+        retries = 3
+        for i in range(retries):
+            try:
+                response = self.chat.send_message(prompt)
+                filename = f"scene_{uuid.uuid4().hex[:8]}.png"
+                scene_path = self._save_image_from_response(response, filename)
+                if scene_path:
+                    logger.info(f"✓ Scene illustration generated at {scene_path}")
+                    return scene_path
+                raise Exception("No image in response")
+            except Exception as e:
+                if "429" in str(e) and i < retries - 1:
+                    logger.warning(f"⚠️ Quota hit (429). Retrying in 5s... (Attempt {i+1}/{retries})")
+                    time.sleep(5)
+                else:
+                    logger.error(f"❌ Failed to generate scene illustration: {e}")
+                    raise e
+
     def generate_initial_avatar(self, appearance_description: str) -> str:
         """
         Generates the first portrait of Puck.

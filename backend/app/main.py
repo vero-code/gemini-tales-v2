@@ -26,13 +26,13 @@ class Feedback(BaseModel):
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# OpenTelemetry configuration
-provider = TracerProvider()
-processor = export.BatchSpanProcessor(
-    CloudTraceSpanExporter(),
-)
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
+# OpenTelemetry configuration - DISABLED TO PREVENT CRASHES DURING STREAMING
+# provider = TracerProvider()
+# processor = export.BatchSpanProcessor(
+#     CloudTraceSpanExporter(),
+# )
+# provider.add_span_processor(processor)
+# trace.set_tracer_provider(provider)
 
 app = FastAPI()
 
