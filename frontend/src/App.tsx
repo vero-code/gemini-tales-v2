@@ -367,12 +367,12 @@ const App: React.FC = () => {
   const connect = async () => {
     setAppState('STARTING');
     setConnectionStatus('Connecting...');
-    logDebug("Connecting to ADK Search Agent...");
+    logDebug("Connecting to ADK Puck Agent...");
 
     try {
         const sessionId = Math.random().toString(36).substring(7);
         const baseUrl = PROXY_URL.split('/ws/proxy')[0]; 
-        const adkUrl = `${baseUrl}/ws/search_live/user1/${sessionId}`;
+        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}`;
 
         console.log("Starting connection to ADK:", adkUrl);
         logDebug(`Target URL: ${adkUrl}`);
@@ -625,6 +625,20 @@ const App: React.FC = () => {
         <p className="text-xl text-gray-500 mt-2 font-medium italic">A magical world where stories come to life!</p>
       </header>
 
+      <div>
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
+          <div className="flex gap-3 mb-4">
+              {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
+              {storyMode === 'live' && (
+                <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
+              )}
+              <button onClick={disconnect} disabled={connectionStatus !== 'Connected'} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
+          </div>
+          <div className="text-sm font-medium text-gray-600">
+              Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
+          </div>
+      </div>
+
       {/* --- MAIN STORY EXPERIENCE (Beautiful UI) --- */}
       <main className="w-full max-w-7xl flex flex-col lg:flex-row gap-8 z-10">
         <div className="flex-1 flex flex-col gap-6">
@@ -785,19 +799,6 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
-                <div className="flex gap-3 mb-4">
-                    {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
-                    {storyMode === 'live' && (
-                      <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
-                    )}
-                    <button onClick={disconnect} disabled={connectionStatus !== 'Connected'} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
-                </div>
-                <div className="text-sm font-medium text-gray-600">
-                    Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
-                </div>
-            </div>
 
             <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                 <div>

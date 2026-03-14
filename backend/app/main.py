@@ -13,7 +13,7 @@ from opentelemetry.sdk.trace import TracerProvider, export
 # Import routers
 from app.routers.avatar import router as avatar_router
 from app.routers.proxy import router as proxy_router
-from app.routers.search import router as search_router
+from app.routers.puck_live import router as puck_live_router
 
 load_dotenv()
 
@@ -47,7 +47,7 @@ app.add_middleware(
 # Include routers
 app.include_router(avatar_router, prefix="/api/avatar", tags=["avatar"])
 app.include_router(proxy_router, prefix="/ws", tags=["proxy"])
-app.include_router(search_router, prefix="/ws", tags=["search"])
+app.include_router(puck_live_router, prefix="/ws", tags=["puck_live"])
 
 # MOUNT STATIC FILES
 # Mount avatars directory

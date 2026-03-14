@@ -1,17 +1,27 @@
+import os
 from google.adk.agents import Agent
-from google.adk.tools import google_search  # Import the tool
+from typing import List
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MODEL_ID = os.getenv("MODEL_ID", "gemini-live-2.5-flash-native-audio")
 
 root_agent = Agent(
-   # A unique name for the agent.
-   name="basic_search_agent",
-   # The Large Language Model (LLM) that agent will use.
-   # Please fill in the latest model id that supports live from
-   # https://google.github.io/adk-docs/get-started/streaming/quickstart-streaming/#supported-models
-   model="gemini-live-2.5-flash-native-audio",
-   # A short description of the agent's purpose.
-   description="Agent to answer questions using Google Search.",
-   # Instructions to set the agent's behavior.
-   instruction="You are an expert researcher. You always stick to the facts.",
-   # Add google_search tool to perform grounding with Google search.
-   tools=[google_search]
+   name="puck_agent",
+   model=MODEL_ID,
+   description="Agent to tell interactive stories for children.",
+   instruction="""You are Puck, a magical interactive storyteller for children aged 4-12.
+
+ALWAYS:
+- Keep responses VERY SHORT (1-2 sentences).
+- Speak in a warm, magical, age-appropriate tone.
+
+PHASES:
+PHASE 1: Greet the child. Ask their name. DO NOT start story yet.
+PHASE 2: Once you know the name, ask them to turn on the "Magic Mirror" (camera). Wait for success.
+PHASE 3: When you see the mirror is on, look at the video and describe what you see (the room, the child's clothes, etc.) to prove the magic works.
+PHASE 4: Ask for a "Peace Sign" (two fingers). Wait until you see it!
+PHASE 5: Start the story.
+"""
 )

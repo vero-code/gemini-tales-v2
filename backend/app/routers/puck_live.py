@@ -11,7 +11,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 # Import agents
-from app.agents.agent import root_agent as search_agent
+from app.agents.agent import root_agent as puck_agent
 from google.genai.types import Modality
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,7 @@ logger.setLevel(logging.INFO)
 router = APIRouter()
 
 session_service = InMemorySessionService()
-search_runner = Runner(app_name="search_adventure", agent=search_agent, session_service=session_service)
+puck_runner = Runner(app_name="puck_adventure", agent=puck_agent, session_service=session_service)
 
 def transform_adk_to_gemini_format(event) -> List[Dict]:
     """Converts ADK events to official Gemini Live API format for frontend compatibility"""
@@ -71,14 +71,14 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
 
     return results
 
-@router.websocket("/search_live/{user_id}/{session_id}")
-async def websocket_search_endpoint(websocket: WebSocket, user_id: str, session_id: str):
+@router.websocket("/puck_live/{user_id}/{session_id}")
+async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id: str):
     await websocket.accept()
-    logger.info(f"🔍 Search Agent Connected: {user_id}/{session_id}")
+    logger.info(f"🔍 Puck Agent Connected: {user_id}/{session_id}")
 
-    session = await session_service.get_session(app_name="search_adventure", user_id=user_id, session_id=session_id)
+    session = await session_service.get_session(app_name="puck_adventure", user_id=user_id, session_id=session_id)
     if not session:
-        await session_service.create_session(app_name="search_adventure", user_id=user_id, session_id=session_id)
+        await session_service.create_session(app_name="puck_adventure", user_id=user_id, session_id=session_id)
 
     run_config = RunConfig(
         response_modalities=[Modality.AUDIO],
@@ -90,7 +90,7 @@ async def websocket_search_endpoint(websocket: WebSocket, user_id: str, session_
     )
 
     live_request_queue = LiveRequestQueue()
-    live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello! Say that you are ready to search.")]))
+    live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello!")]))
 
     async def upstream_task():
         try:
@@ -115,14 +115,14 @@ async def websocket_search_endpoint(websocket: WebSocket, user_id: str, session_
                         logger.error(f"Error parsing upstream JSON: {e}")
         except Exception as e:
             if "disconnect" not in str(e).lower():
-                logger.error(f"❌ Search Upstream error: {e}")
+                logger.error(f"❌ Puck Upstream error: {e}")
 
     async def downstream_task():
         try:
             await websocket.send_text(json.dumps({"type": "SETUP_COMPLETE", "setupComplete": True}))
             logger.info("✅ Green light sent to frontend! Waiting for reaction...")
 
-            async for event in search_runner.run_live(
+            async for event in puck_runner.run_live(
                 user_id=user_id,
                 session_id=session_id,
                 live_request_queue=live_request_queue,
@@ -132,7 +132,7 @@ async def websocket_search_endpoint(websocket: WebSocket, user_id: str, session_
                 for transformed_event in transformed_events:
                     await websocket.send_text(json.dumps(transformed_event))
         except Exception as e:
-            logger.error(f"❌ Search Downstream error: {e}")
+            logger.error(f"❌ Puck Downstream error: {e}")
 
     try:
         await asyncio.gather(upstream_task(), downstream_task())
