@@ -6,7 +6,7 @@ from google.adk.agents import Agent
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools.google_search_tool import google_search
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from shared.config import STRICT_SAFETY
 
 load_dotenv()

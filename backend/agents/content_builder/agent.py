@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from google.genai import types
 from google.adk.agents import Agent
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from shared.config import STRICT_SAFETY
 load_dotenv()
 

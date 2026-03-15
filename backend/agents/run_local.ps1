@@ -1,8 +1,8 @@
-# Run from the project root: .\run_local.ps1
+# Run from backend/agents: .\run_local.ps1
 
 # 1. Port Cleanup
-Write-Host "--- Cleaning up ports 8000-8004 ---" -ForegroundColor Yellow
-8000..8004 | ForEach-Object {
+Write-Host "--- Cleaning up ports 8001-8004 ---" -ForegroundColor Yellow
+8001..8004 | ForEach-Object {
     $port = $_
     $netstat = netstat -ano | Select-String ":$port\s"
     foreach ($line in $netstat) {
@@ -16,19 +16,16 @@ Write-Host "--- Cleaning up ports 8000-8004 ---" -ForegroundColor Yellow
     }
 }
 
-# 2. Load .env
+# 2. Load .env (from main app folder)
 Write-Host "--- Loading environment variables ---" -ForegroundColor Yellow
-if (Test-Path ".env") {
-    Get-Content .env -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*#' -and $_ -match '=' } | ForEach-Object {
+$envPath = "../app/.env"
+if (Test-Path $envPath) {
+    Get-Content $envPath -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*#' -and $_ -match '=' } | ForEach-Object {
         $line = $_.Trim()
         if ($line -match '^([^=]+)=(.*)$') {
             $key = $Matches[1].Trim()
             $value = $Matches[2].Trim()
-            # Remove inline comments (strip everything after the first unquoted #)
-            if ($value -match '^([^#]*)') {
-                $value = $Matches[1].Trim()
-            }
-            # Remove optional quotes from value
+            if ($value -match '^([^#]*)') { $value = $Matches[1].Trim() }
             if ($value -match '^"(.*)"$') { $value = $Matches[1] }
             elseif ($value -match "^'(.*)'$") { $value = $Matches[1] }
             [System.Environment]::SetEnvironmentVariable($key, $value, 'Process')
@@ -45,20 +42,15 @@ function Start-Agent($name, $agentArgs) {
 $procs = @()
 
 # 3. Start A2A Agents
-$procs += Start-Agent "Researcher (8001)"      "shared/adk_app.py agents/researcher --host 0.0.0.0 --port 8001 --a2a"
-$procs += Start-Agent "Judge (8002)"           "shared/adk_app.py agents/judge --host 0.0.0.0 --port 8002 --a2a"
-$procs += Start-Agent "Content Builder (8003)" "shared/adk_app.py agents/content_builder --host 0.0.0.0 --port 8003 --a2a"
+$procs += Start-Agent "Researcher (8001)"      "adk_app.py researcher --host 0.0.0.0 --port 8001 --a2a"
+$procs += Start-Agent "Judge (8002)"           "adk_app.py judge --host 0.0.0.0 --port 8002 --a2a"
+$procs += Start-Agent "Content Builder (8003)" "adk_app.py content_builder --host 0.0.0.0 --port 8003 --a2a"
 
 Write-Host "Waiting 5 seconds for agents to wake up..." -ForegroundColor Yellow
 Start-Sleep -Seconds 5
 
-# 4. Start Orchestrator and Main App
-$procs += Start-Agent "Orchestrator (8004)"    "shared/adk_app.py agents/orchestrator --host 0.0.0.0 --port 8004"
-
-Write-Host "Starting Main App Server..." -ForegroundColor Yellow
-Start-Sleep -Seconds 2
-
-$procs += Start-Agent "App Server (8000)"      "app/main.py"
+# 4. Start Orchestrator
+$procs += Start-Agent "Orchestrator (8004)"    "adk_app.py orchestrator --host 0.0.0.0 --port 8004"
 
 Write-Host ""
 Write-Host "All systems are up and running!" -ForegroundColor Green
