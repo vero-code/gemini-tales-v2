@@ -6,7 +6,6 @@ import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
 import { SYSTEM_INSTRUCTION, AGENT_SYSTEM_INSTRUCTION, INITIAL_ACHIEVEMENTS } from './config';
 import { ModeSelector } from './components/ModeSelector';
 import { useAgentStory } from './hooks/useAgentStory';
-import BiometricLock from './components/BiometricLock';
 
 // --- ENV VARIABLES ---
 const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
@@ -86,20 +85,6 @@ class ShowChoiceTool extends FunctionCallDefinition {
   functionToCall(parameters: any) { this.callback(parameters.options); }
 }
 
-class TriggerBiometricTool extends FunctionCallDefinition {
-  callback: () => void;
-  constructor(callback: () => void) {
-    super(
-      "triggerBiometric",
-      "Triggers the biometric hand scanner on the user's device. MUST call this when asking for the child to scan their hand.",
-      { type: "object", properties: {} },
-      []
-    );
-    this.callback = callback;
-  }
-  functionToCall() { this.callback(); }
-}
-
 const App: React.FC = () => {
   // --- STORY STATE ---
   const [appState, setAppState] = useState<AppState | 'IDLE' | 'STARTING' | 'STORYTELLING' | 'ERROR'>('IDLE');
@@ -137,8 +122,6 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<{sender: string, text: string, type: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [debugInfo, setDebugInfo] = useState('Application initialized...\n');
-  const [showBiometricLock, setShowBiometricLock] = useState(false);
-  const [pendingBiometricId, setPendingBiometricId] = useState<string | null>(null);
 
   // --- REFS ---
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -741,32 +724,6 @@ const App: React.FC = () => {
           <div className={`glass-card rounded-[40px] overflow-hidden aspect-square relative shadow-xl bg-indigo-950 border-4 transition-all duration-500 ${isUserSpeaking ? 'border-pink-400 scale-[1.02]' : 'border-white/20'}`}>
             <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 transition-opacity duration-1000 ${isCameraActive ? 'opacity-80' : 'opacity-0'}`} />
             
-            {showBiometricLock && (
-              <BiometricLock videoRef={videoRef as React.RefObject<HTMLVideoElement>} onUnlock={() => {
-                  setShowBiometricLock(false);
-                  appendChat("SYSTEM", "Biometric verification successful!", "system");
-                  
-                  if (pendingBiometricId && liveClientRef.current) {
-                      const payload = {
-                          tool_response: {
-                              function_responses: [
-                                  {
-                                      id: pendingBiometricId,
-                                      response: { result: "Success: The biometric verification passed." }
-                                  }
-                              ]
-                          }
-                      };
-                      liveClientRef.current.sendMessage(payload);
-                      setPendingBiometricId(null);
-                  }
-                  
-                  if (liveClientRef.current) {
-                      liveClientRef.current.sendTextMessage("[SYSTEM]: Biometric verification SUCCESSFUL. Proceed to PHASE 3.");
-                  }
-              }} />
-            )}
-
             {!isCameraActive && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
                 <span className="text-6xl mb-4">📷</span>

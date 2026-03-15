@@ -80,7 +80,7 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
                 "id": getattr(fc, 'id', str(uuid.uuid4()))
             })
         if gemini_tool_calls:
-            logger.info(f"🛠️ [ADK Event] Forwarding {len(gemini_tool_calls)} tool calls")
+            # logger.info(f"🛠️ [ADK Event] Forwarding {len(gemini_tool_calls)} tool calls")
             results.append({
                 "type": "TOOL_CALL",
                 "data": {
@@ -98,7 +98,7 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
                 response_val = getattr(fr, 'response', {})
                 if isinstance(response_val, dict):
                     result_text = str(response_val.get('result', ''))
-                    logger.info(f"🔎 [ADK Event] Checking tool response result content: {result_text}")
+                    # logger.info(f"🔎 [ADK Event] Checking tool response result content: {result_text}")
                     if "/avatars/" in result_text:
                         # Improved regex to catch the URL more reliably
                         match = re.search(r'(/avatars/[\w\-\.]+\.(png|jpg|jpeg|webp|mp4))', result_text)
@@ -161,7 +161,7 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
         # ... (rest of the code remains same)
 
         try:
-            logger.info(f"🎨 [WebSocket] Pushing illustration DIRECTLY to frontend: {url}")
+            # logger.info(f"🎨 [WebSocket] Pushing illustration DIRECTLY to frontend: {url}")
             await websocket.send_text(json.dumps({
                 "type": "ILLUSTRATION", 
                 "data": {"url": url}
@@ -171,7 +171,7 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
             
     async def send_badge(badge_id: str):
         try:
-            logger.info(f"🏅 [WebSocket] Pushing badge DIRECTLY to frontend: {badge_id}")
+            # logger.info(f"🏅 [WebSocket] Pushing badge DIRECTLY to frontend: {badge_id}")
             # The frontend expects a TOOL_CALL with name awardBadge
             await websocket.send_text(json.dumps({
                 "type": "TOOL_CALL",
@@ -204,7 +204,7 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
 
     live_request_queue = LiveRequestQueue()
     if story_mode == "agent":
-        logger.info("🚀 Sending initial Narrator trigger for Agent Mode.")
+        # logger.info("🚀 Sending initial Narrator trigger for Agent Mode.")
         live_request_queue.send_content(types.Content(parts=[types.Part(text="I am ready to tell the Storysmith story! Please give me the blueprint.")]))
     else:
         live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello!")]))
@@ -238,7 +238,7 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
     async def downstream_task():
         try:
             await websocket.send_text(json.dumps({"type": "SETUP COMPLETE", "setupComplete": True}))
-            logger.info("✅ Green light sent to frontend! Waiting for reaction...")
+            # logger.info("✅ Green light sent to frontend! Waiting for reaction...")
 
             async for event in local_runner.run_live(
                 user_id=user_id,
