@@ -20,42 +20,42 @@
 
 ---
 
-## 1. High-level Overview
-
-Gemini Tales is an integrated AI storytelling system built on the Google Agent Development Kit (ADK). It allows users to generate interactive stories through two distinct pathways: **Live** and **Agent-driven**.
+Gemini Tales is an integrated AI storytelling system built on the Google Agent Development Kit (ADK). It allows users to generate interactive stories through two distinct pathways: **Live** and **Agent-driven**, acting as a **Creative Storyteller ✍️** that breaks the traditional "text box" paradigm.
 
 | Component | Responsibility | Primary Technology |
 |---|---|---|
-| **Frontend** | Modern UI for mode selection and interactive storytelling | React / Vite / Tailwind CSS |
-| **API Layer** | WebSocket Proxy & Static File Host | Python / FastAPI / Uvicorn |
-| **Story Engine** | Multi-agent pipeline for research and writing | Google ADK / A2A Protocol |
+| **Frontend** | "Magic Mirror" UI — Real-time interaction & media | React 19 / Vite / Tailwind |
+| **Main Agent (Puck)** | Live Narrator — Handles voice, vision, and interleaved media | Python / FastAPI / Gemini Live 2.5 |
+| **Supporting Brain** | Background agents for research, safety, and writing | Google ADK / A2A Protocol |
+| **Media Factory** | Generates cinematic animations and illustrations | Veo 3.1 / Gemini 2.5 Flash-Image |
 
 ```mermaid
 graph TD
-    User([User]) <--> Browser["Browser (React UI)"]
+    User([User]) <--> Browser["Browser (Magic Mirror UI)"]
     
-    subgraph "Backend Server"
-        Browser <-->|WebSocket Proxy| Proxy[WebSocket Proxy :8000]
-        Browser -->|Static Files| Static[Static File Host]
+    subgraph "Main Agent (Puck)"
+        Browser <-->|WebSocket| LiveBridge[Live Bridge :8000]
+        LiveBridge <--> MediaFactory[Media Factory]
     end
     
-    subgraph "Google Cloud / AI Services"
-        Proxy <-->|WebSocket| LiveAPI[Gemini Live 2.5 Flash]
-        Storysmith -->|LLM Call| FlashPro[Gemini 3.1 Pro]
-        Researcher -->|Search| GoogleSearch[Google Search API]
+    subgraph "Google AI & Cloud Services"
+        LiveBridge <-->|WebSocket| GeminiLive[Gemini Live 2.5 Flash]
+        MediaFactory -->|Video Gen| Veo[Veo 3.1]
+        MediaFactory -->|Image Gen| FlashImage[Gemini 2.5 Flash-Image]
+        Orchestrator -->|Reasoning| GeminiPro[Gemini 3.1 Pro]
     end
     
-    subgraph "Multi-agent Story Engine (ADK)"
-        Proxy -->|HTTP Stream| Orchestrator[Orchestrator :8004]
-        Orchestrator <-->|A2A| Researcher[Adventure Seeker :8001]
-        Orchestrator <-->|A2A| Judge[Guardian of Balance :8002]
+    subgraph "Supporting Agents (ADK Brain)"
+        LiveBridge -->|HTTP| Orchestrator[Orchestrator :8004]
+        Orchestrator <-->|A2A| Researcher[Researcher :8001]
+        Orchestrator <-->|A2A| Judge[Judge :8002]
         Orchestrator <-->|A2A| Storysmith[Storysmith :8003]
     end
     
     style Browser fill:#f9f,stroke:#333,stroke-width:2px
-    style Proxy fill:#f9f,stroke:#333,stroke-width:2px
+    style LiveBridge fill:#f9f,stroke:#333,stroke-width:2px
     style Orchestrator fill:#ccf,stroke:#333,stroke-width:2px
-    style LiveAPI fill:#eee,stroke:#333,stroke-dasharray: 5 5
+    style MediaFactory fill:#fff4dd,stroke:#d4a017,stroke-width:2px
 ```
 
 ---
@@ -83,27 +83,24 @@ In **Agent Mode**, the multi-agent backend pre-generates a story foundation befo
 
 ```
 gemini-tales/
-├── app/                        # Main FastAPI Server & Frontend
-│   ├── main.py                 # WebSocket Proxy & Static Site Host
-│   ├── frontend/               # React Frontend (TypeScript)
-│   │   ├── src/                # TSX/TS components and logic
-│   │   ├── dist/               # Production build
-│   │   └── package.json        # Node.js dependencies (React 19)
+├── frontend/                   # "Magic Mirror" React 19 Frontend
+│   ├── src/                    # TSX components (Gemini Live integration)
+│   └── package.json            # Node.js dependencies
 │
-├── agents/                     # ADK Agents (microservices)
-│   ├── researcher/             # Adventure Seeker
-│   ├── judge/                  # Guardian of Balance
-│   ├── content_builder/        # Storysmith
-│   └── orchestrator/           # Pipeline logic
-│
-├── shared/                     # Shared utilities for agents
-│   ├── adk_app.py              # Common A2A server entry point
-│   └── config.py               # Shared Gemini config (Safety settings)
-│
-├── assets/                     # UI Assets & Documentation images
-├── pyproject.toml              # Root workspace manifest (uv)
-├── run_local.ps1               # Starts all 5 services locally (uv)
-└── deploy.ps1                  # Deploys all 5 services to Cloud Run
+├── backend/
+│   ├── app/                    # Main Agent (Puck) & Media Factory
+│   │   ├── main.py             # FastAPI WebSocket Entry Point
+│   │   ├── avatar_generator.py # Veo 3.1 & Flash-Image Logic
+│   │   └── routers/            # Puck Live & Agent Story Endpoints
+│   │
+│   └── agents/                 # Supporting ADK Brain
+│       ├── researcher/         # Adventure Seeker (Search)
+│       ├── judge/              # Guardian of Balance (Safety/Movement)
+│       ├── content_builder/    # Storysmith (Narrative)
+│       ├── orchestrator/       # Pipeline coordination
+│       ├── shared/             # Shared Safety & Config
+│       ├── run_local.ps1       # Local start for Brain microservices
+│       └── deploy.ps1          # Cloud Run deployment script
 ```
 
 ---
@@ -112,13 +109,13 @@ gemini-tales/
 
 The frontend is a high-performance web interface migrated to **TypeScript** for enhanced stability. It orchestrates a unified multimodal stream.
 
-### 3.1 Multimodal Pipeline (Voice + Vision)
+### 4.1 Multimodal Pipeline (Voice + Vision)
 
 Unlike traditional chatbots, Gemini Tales uses a synchronized stream:
 - **Unified Session**: A single WebSocket session handles both **PCM Audio** (captured via `AudioWorklet`) and **Video Frames** (1 FPS JPEG/Base64).
 - **Spatial/Visual Context**: Gemini processes video frames in real-time, allowing it to comment on physical actions or surroundings during the audio story.
 
-### 3.2 Auto-start Logic
+### 4.2 Auto-start Logic
 
 To minimize friction, the application implements an automatic story trigger:
 1. **Handshake**: Browser establishes `ws://` connection via the FastAPI proxy.
@@ -127,14 +124,14 @@ To minimize friction, the application implements an automatic story trigger:
 4. **Context Injection**: The resulting story is injected into the Gemini Live session as a background "memory" trigger.
 5. **Immersive Entry**: The AI begins the narrative based on the agent-generated plot, greeting the user with voice and an initial illustration.
 
-### 3.4 Interactive Gameplay (Visual Feedback Loop)
+### 4.3 Interactive Gameplay (Visual Feedback Loop)
 
 The application implements a unique "Stop-and-Watch" mechanism:
 - **Challenge Trigger**: The system instructions guide Gemini to ask for a physical action.
 - **Immediate Silence**: The model is instructed to stop speaking and wait after the request.
 - **Multimodal Verification**: Using the 1 FPS video feed and audio transcription, the "Live" model detects when the child has completed the action and said the magic word, then resumes the story with praise.
 
-### 3.3 Media & Device Management
+### 4.4 Media & Device Management
 
 The UI includes a robust device initialization flow (`fetchDevices`) that handles permissions and allows users to swap microphones/cameras on-the-fly without breaking the live session.
 
@@ -142,7 +139,7 @@ The UI includes a robust device initialization flow (`fetchDevices`) that handle
 
 ## 5. Subsystem B — Multi-agent Story Engine (Backend)
 
-### 4.1 Agent Roles
+### 5.1 Agent Roles
 
 | Agent | Model | Key tools / output | ADK type |
 |---|---|---|---|
@@ -151,7 +148,7 @@ The UI includes a robust device initialization flow (`fetchDevices`) that handle
 | **Storysmith** | `gemini-3.1-pro` | High-fidelity narrative | `Agent` |
 | **Orchestrator** | — | A2A Coordination | `SequentialAgent` |
 
-### 4.2 Orchestration Logic
+### 5.2 Orchestration Logic
 
 ```mermaid
 stateDiagram-v2
@@ -173,7 +170,7 @@ stateDiagram-v2
 
 **EscalationChecker** is a custom `BaseAgent` subclass. It reads `session.state["judge_feedback"]` and yields an `Event(escalate=True)` to break the `LoopAgent`, or an empty event to continue.
 
-### 4.3 A2A Communication
+### 5.3 A2A Communication
 
 Each of the three leaf agents (Researcher, Judge, Content Builder) runs as a standalone **A2A server** (served by `adk_app.py`). The Orchestrator connects to them via `RemoteA2aAgent`, which:
 
@@ -188,7 +185,7 @@ Orchestrator
   └── RemoteA2aAgent("content_builder") → HTTP POST  http://localhost:8003/a2a/... (Storysmith)
 ```
 
-### 4.4 FastAPI Proxy Layer
+### 5.4 FastAPI Proxy Layer
 
 `app/main.py` serves two critical functions:
 
@@ -203,30 +200,30 @@ Orchestrator
 
 ---
 
-## 6. Subsystem C — Character Workshop
+## 6. Subsystem C — Media Factory & Character Workshop
 
-The **Character Workshop** is a dedicated module for creating consistent character visuals that persist across story scenes, powered by **Gemini 2.5 Flash-Image**.
+The **Media Factory** provides a seamless, context-aware visual layer that makes the story **feel alive**.
 
-### 6.1 Multi-turn Consistency Logic
+### 6.1 Cinematic Animation (Veo 3.1)
+- **Technology**: **Veo 3.1** (Google's latest video generation model).
+- **Function**: Transforms the static character description into a 4-second magical video preview.
+- **Trigger**: Activated by the user via the "Animate" button in the Character Workshop.
 
-To solve the "same face" problem common in AI generation, we use a stateful chat session:
-1. **Initial Portrait**: The user provides a text description (e.g., "girl with red pigtails"). Gemini generates a base watercolor portrait.
-2. **Session Persistence**: The `StoryAvatarGenerator` maintains an active `ChatSession` with the model.
-3. **Action Mapping**: When the user requests an action (e.g., "casting a spell"), the specific instruction is sent *inside* the same chat session.
-4. **Contextual Awareness**: Because the model "remembers" its previous output (the portrait), it maintains the child's likeness, hair, and clothing in the new action pose.
+### 6.2 Interleaved Illustrations (Gemini 2.5 Flash-Image)
+- **Technology**: **Gemini 2.5 Flash-Image**.
+- **Function**: Automatically generates high-quality watercolor illustrations for every new scene.
+- **Mechanism**: The Main Agent (Puck) triggers a `generateIllustration` tool call, which is processed by the backend to return an image URL back into the live stream.
 
-### 6.2 Photo-to-Avatar Transformation
-
+### 6.3 Portrait Transformation
 The system supports a multimodal "likeness transfer" flow:
 - **Input**: A real photo (JPEG/PNG) and a fairytale style prompt.
-- **Multimodal Prompt**: The backend sends both the image bytes and the prompt to the multimodal model.
-- **Stylization**: Gemini analyzes the facial features (glasses, smile, face shape) and "repaints" them into the whimsical watercolor aesthetic while preserving the user's likeness.
+- **Process**: Gemini analyzes facial features from the upload and "repaints" them in the whimsical watercolor aesthetic, ensuring the child sees themselves as the hero.
 
 ---
 
 ## 7. Data Flows
 
-### 5.1 Real-time Storytelling Flow (WebSocket)
+### 7.1 Real-time Storytelling Flow (WebSocket)
 
 ```mermaid
 sequenceDiagram
@@ -252,7 +249,7 @@ sequenceDiagram
     P->>B: forward awardBadge
 ```
 
-### 5.2 Multi-agent Research Flow
+### 7.2 Multi-agent Research Flow
 
 The ADK agents are still utilized by the `content_builder` during specific story transitions or for pre-generating lore, following the same A2A orchestration described in Subsystem B.
 
@@ -299,7 +296,7 @@ graph TD
     I -->|Deployed w/ AGENT_SERVER_URL| J[Public Frontend]
 ```
 
-The `course-creator` (App) Cloud Run service is publicly accessible. The four agent services have `--no-allow-unauthenticated` and require a Google OAuth2 bearer token — handled transparently by `authenticated_httpx.py` using Application Default Credentials.
+The **Gemini Tales App** Cloud Run service is publicly accessible. The four agent services have `--no-allow-unauthenticated` and require a Google OAuth2 bearer token — handled transparently by `authenticated_httpx.py` using Application Default Credentials.
 
 **Observability:** The FastAPI app instruments traces with **OpenTelemetry** and exports them to **Google Cloud Trace** via `CloudTraceSpanExporter`.
 
@@ -332,14 +329,14 @@ The Orchestrator saves agent outputs (`research_findings`, `judge_feedback`) int
 
 ## 11. Tech Stack Summary
 
-| Layer | Technology | Version |
+| Layer | Technology | Version / Specifics |
 |---|---|---|
-| Large Language Model | Gemini 3.1 Flash-Lite / Pro | (Default: `3.1-flash-lite`) |
-| Live Interaction | Gemini Live 2.5 Flash | — |
-| Multi-agent framework | Google Agent Development Kit (ADK) | `1.22.0` |
-| Frontend | React + Vite + Tailwind CSS | — |
-| Backend | FastAPI + Uvicorn | `0.123.*` |
-| Protocol | WebSocket / A2A | — |
-| Python | CPython | `≥ 3.10` |
-| Package manager | uv | — |
-| Hosting | Google Cloud Run | — |
+| **Main LLM Brain** | Gemini 3.1 Pro | For orchestration and writing |
+| **Fast Reasoning** | Gemini 3.1 Flash-Lite | For research and judging |
+| **Live Interaction** | Gemini Live 2.5 Flash | Real-time multimodal streaming |
+| **Video Production** | Veo 3.1 | For character animation |
+| **Image Production** | Gemini 2.5 Flash-Image | For scene illustrations |
+| **Agent Framework** | Google Agent Development Kit (ADK) | 1.22.0 |
+| **Frontend** | React 19 + Vite | "Magic Mirror" Dashboard |
+| **Backend** | FastAPI (Python 3.12) | Main Agent bridge |
+| **Deployment** | Google Cloud Run | Serverless microservices |
