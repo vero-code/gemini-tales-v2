@@ -386,7 +386,7 @@ const App: React.FC = () => {
     try {
         const sessionId = Math.random().toString(36).substring(7);
         const baseUrl = PROXY_URL.split('/ws/proxy')[0]; 
-        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}`;
+        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}?mode=${storyMode}`;
 
         console.log("Starting connection to ADK:", adkUrl);
         logDebug(`Target URL: ${adkUrl}`);
@@ -416,8 +416,12 @@ const App: React.FC = () => {
               logDebug("✨ Protocol Synchronized! Puck is awake.");
               
               if (storyMode === 'agent' && storyText) {
-                  logDebug("🤫 Sending drafted story to Puck...");
-                  const hiddenPrompt = `[SYSTEM MAIN INSTRUCTION - Do not say this out loud]: We've already prepared the story. Your goal is to guide the child through this exact story interactively. Tell it step by step, asking them to do the physical activities. Here is the story blueprint:\n\n${storyText}`;
+                  logDebug("🤫 Handing over the drafted story to Puck...");
+                  appendChat("SYSTEM", "Delivering the magic blueprint...", "system");
+                  
+                  const hiddenPrompt = `STORY BLUEPRINT:\n${storyText}\n\nINSTRUCTION: Tell this story exactly. Do not improvise other adventures. Greet the child now.`;
+                  
+                  console.log("📤 [Puck Handoff] Story Length:", storyText.length);
                   liveClientRef.current?.sendTextMessage(hiddenPrompt);
               }
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
@@ -844,10 +848,14 @@ const App: React.FC = () => {
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
               <div className="flex gap-3 mb-4">
                   {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
-                  {storyMode === 'live' && (
-                    <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
+                  {/* Use a single set of logic for connection buttons, but keep the special 'Wake Puck' for agent mode ready state */}
+                  {connectionStatus !== 'Connected' ? (
+                    storyMode === 'live' && (
+                      <button onClick={connect} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all">Connect API</button>
+                    )
+                  ) : (
+                    <button onClick={disconnect} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all">Disconnect</button>
                   )}
-                  <button onClick={disconnect} disabled={connectionStatus !== 'Connected'} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
               </div>
               <div className="text-sm font-medium text-gray-600">
                   Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>

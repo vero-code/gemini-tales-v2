@@ -4,6 +4,7 @@ import asyncio
 import base64
 import re
 import uuid
+import copy
 from typing import List, Dict, Any
 from fastapi import APIRouter, WebSocket
 from google.adk.agents.live_request_queue import LiveRequestQueue
@@ -51,10 +52,10 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
         for part in parts:
             if hasattr(part, 'inline_data') and part.inline_data:
                 audio_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
-                logger.info(f"🔊 [ADK Event] Audio part: {len(audio_base64)} chars")
+                # logger.info(f"🔊 [ADK Event] Audio part: {len(audio_base64)} chars") # SILENCED to keep console clean
                 gemini_parts.append({"inlineData": {"data": audio_base64, "mimeType": "audio/pcm;rate=16000"}})
             elif hasattr(part, 'text') and part.text:
-                logger.info(f"💬 [ADK Event] Text part: '{part.text}'")
+                logger.info(f"💬 [ADK Event] Puck says: '{part.text[:100]}...'")
                 gemini_parts.append({"text": part.text})
         
         if gemini_parts:
@@ -112,16 +113,53 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
         results.append({"serverContent": {"turnComplete": True}})
 
     if results:
-        logger.info(f"📤 [ADK Event] Sending {len(results)} messages to frontend: {[r.get('type') or r for r in results]}")
+        # Create a clean summary for logging instead of raw objects
+        log_summary = []
+        for r in results:
+            if "serverContent" in r:
+                sc = r["serverContent"]
+                if "modelTurn" in sc: log_summary.append("MODAL_TURN (Audio/Text)")
+                elif "outputTranscription" in sc: log_summary.append(f"TRANSCRIPTION: {sc['outputTranscription'].get('text')[:30]}...")
+                elif "turnComplete" in sc: log_summary.append("TURN_COMPLETE")
+            else:
+                log_summary.append(r.get("type", "UNKNOWN"))
+        
+        logger.info(f"📤 [ADK Event] Sending to frontend: {', '.join(log_summary)}")
     return results
 
 @router.websocket("/puck_live/{user_id}/{session_id}")
 async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id: str):
     await websocket.accept()
-    logger.info(f"🔍 Puck Agent Connected: {user_id}/{session_id}")
+    
+    # Get story mode from query params (default to live)
+    story_mode = websocket.query_params.get("mode", "live")
+    logger.info(f"🔍 Puck Agent Connected: {user_id}/{session_id} (Mode: {story_mode})")
 
-    # Callback to send illustration directly when it's generated
+    # Determine instructions based on mode
+    current_instruction = puck_agent.instruction
+    if story_mode == "agent":
+        current_instruction = """You are Puck, a magical narrator. 
+A special story has been prepared for the child. 
+Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
+1. DO NOT invent your own stories or talk about rabbits/meadows.
+2. Once you receive the blueprint, say: "I have the magic story! Let's begin."
+3. Read the story exactly as written, step by step.
+4. Stop for physical exercises and wait for them to finish.
+"""
+        logger.info("🧠 Session instruction set to NARRATOR mode.")
+    else:
+        logger.info("🌿 Session instruction set to LIVE mode.")
+
+    # Create a session-local runner with the desired instruction
+    # Use copy for shallow copy to avoid overriding global puck_agent but sharing tools
+    local_puck = copy.copy(puck_agent)
+    local_puck.instruction = current_instruction
+    local_runner = Runner(app_name="puck_adventure", agent=local_puck, session_service=session_service)
+
+
     async def send_illustration(url: str):
+        # ... (rest of the code remains same)
+
         try:
             logger.info(f"🎨 [WebSocket] Pushing illustration DIRECTLY to frontend: {url}")
             await websocket.send_text(json.dumps({
@@ -165,7 +203,11 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
     )
 
     live_request_queue = LiveRequestQueue()
-    live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello!")]))
+    if story_mode == "agent":
+        logger.info("🚀 Sending initial Narrator trigger for Agent Mode.")
+        live_request_queue.send_content(types.Content(parts=[types.Part(text="I am ready to tell the Storysmith story! Please give me the blueprint.")]))
+    else:
+        live_request_queue.send_content(types.Content(parts=[types.Part(text="Hello!")]))
 
     async def upstream_task():
         try:
@@ -185,6 +227,7 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
                             image_data = base64.b64decode(data["data"])
                             live_request_queue.send_realtime(types.Blob(mime_type="image/jpeg", data=image_data))
                         elif "text" in data:
+                            logger.info(f"📥 [WebSocket] Received text from frontend: {data['text'][:50]}...")
                             live_request_queue.send_content(types.Content(parts=[types.Part(text=data["text"])]))
                     except Exception as e:
                         logger.error(f"Error parsing upstream JSON: {e}")
@@ -197,7 +240,7 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
             await websocket.send_text(json.dumps({"type": "SETUP COMPLETE", "setupComplete": True}))
             logger.info("✅ Green light sent to frontend! Waiting for reaction...")
 
-            async for event in puck_runner.run_live(
+            async for event in local_runner.run_live(
                 user_id=user_id,
                 session_id=session_id,
                 live_request_queue=live_request_queue,

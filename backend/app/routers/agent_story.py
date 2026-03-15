@@ -32,51 +32,107 @@ orchestrator_agent = RemoteA2aAgent(
 
 session_service = InMemorySessionService()
 
+from google.genai.types import Content, Part
+
 @router.post("/chat_stream")
 async def chat_stream(req: ChatRequest):
-    # Create the runner per request to ensure thread safety
-    runner = Runner(
-        app_name="gemini_tales_proxy",
-        agent=orchestrator_agent,
-        session_service=session_service
-    )
-    
     async def event_generator():
         try:
+            session_id = f"story_{req.user_id}"
+            
+            # 1. Ensure session exists FIRST
+            print(f"DEBUG: Checking session {session_id} for user {req.user_id}")
+            session = await session_service.get_session(
+                app_name="gemini_tales_proxy", 
+                user_id=req.user_id, 
+                session_id=session_id
+            )
+            if not session:
+                print(f"DEBUG: Session not found, creating it...")
+                await session_service.create_session(
+                    app_name="gemini_tales_proxy", 
+                    user_id=req.user_id, 
+                    session_id=session_id
+                )
+                session = await session_service.get_session(
+                    app_name="gemini_tales_proxy", 
+                    user_id=req.user_id, 
+                    session_id=session_id
+                )
+                print(f"DEBUG: Session created: {session is not None}")
+            
+            # 2. Instantiate Runner AFTER session is ready
+            print(f"DEBUG: Initializing Runner for {orchestrator_agent.name} at {orchestrator_url}")
+            runner = Runner(
+                app_name="gemini_tales_proxy",
+                agent=orchestrator_agent,
+                session_service=session_service
+            )
+
+            # 3. Prepare content
+            user_content = Content(
+                role="user",
+                parts=[Part(text=req.message)]
+            )
+            
             active_agent = ""
-            async for event in runner.run(
-                user_input=req.message,
+            async for event in runner.run_async(
+                new_message=user_content,
                 user_id=req.user_id,
+                session_id=session_id,
             ):
-                author = getattr(event, 'author', '')
-                content = getattr(event, 'content', None)
-                
-                # We want to tell the frontend who is currently working and output the final result
-                if getattr(event, 'partial', False):
-                    continue
+                try:
+                    author = getattr(event, 'author', '')
+                    content = getattr(event, 'content', None)
+                    is_partial = getattr(event, 'partial', False)
                     
-                if content and getattr(content, 'parts', []):
-                    text_parts = [p.text for p in content.parts if getattr(p, 'text', None)]
-                    if text_parts:
-                        full_text = "".join(text_parts)
-                        if author == "gemini_tales_pipeline" or author == orchestrator_agent.name:
-                            # Final result
-                            yield json.dumps({"type": "result", "text": full_text}) + "\n"
-                        else:
-                            # Log intermediate results internally, but normally we just show progress to UI
-                            yield json.dumps({"type": "progress", "text": f"🧠 [{author}] finished a thought..."}) + "\n"
-                # Event might not have content but indicates an agent is running
-                elif author:
-                    if author != active_agent and author != orchestrator_agent.name and author != "research_loop":
-                        active_agent = author
+                    # Log for debugging (visible in terminal)
+                    if content:
+                        logger.info(f"📩 [Event] Author: {author}, Content Type: {type(content)}")
+
+                    if is_partial:
+                        continue
+                        
+                    if content:
+                        text_to_send = ""
+                        
+                        # Case 1: content is a raw string
+                        if isinstance(content, str):
+                            text_to_send = content
+                        
+                        # Case 2: content is an object with parts (Standard ADK/Gemini)
+                        elif hasattr(content, 'parts'):
+                            parts = content.parts or []
+                            text_parts = []
+                            for p in parts:
+                                if hasattr(p, 'text') and p.text:
+                                    text_parts.append(p.text)
+                                elif isinstance(p, str):
+                                    text_parts.append(p)
+                            text_to_send = "".join(text_parts)
+                        
+                        if text_to_send:
+                            # If it's the final output of the pipeline or content builder
+                            if author in ["gemini_tales_pipeline", "content_builder", orchestrator_agent.name]:
+                                yield json.dumps({"type": "result", "text": text_to_send}) + "\n"
+                            else:
+                                # Intermediate results can be shown as progress
+                                yield json.dumps({"type": "progress", "text": f"🧠 {author} finished: {text_to_send[:50]}..."}) + "\n"
+
+                    # Even if no content, show which agent is active
+                    elif author and author != "research_loop":
                         agent_display_names = {
                             "researcher": "🕵️ Adventure Seeker",
                             "judge": "⚖️ Guardian of Balance",
                             "content_builder": "🧙‍♂️ Storysmith",
-                            "escalation_checker": "🛡️ Safety Checker"
+                            "orchestrator": "🪄 Orchestrator"
                         }
                         display_name = agent_display_names.get(author, author)
-                        yield json.dumps({"type": "progress", "text": f"⏳ {display_name} is working..."}) + "\n"
+                        yield json.dumps({"type": "progress", "text": f"⏳ {display_name} is thinking..."}) + "\n"
+
+                except Exception as inner_e:
+                    logger.error(f"Error processing event: {inner_e}")
+                    continue
 
         except Exception as e:
             logger.error(f"Error streaming from orchestrator: {e}")
