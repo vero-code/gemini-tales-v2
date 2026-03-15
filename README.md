@@ -1,111 +1,141 @@
 # ✨ Gemini Tales
 
-![Status](https://img.shields.io/badge/status-active%20development-orange?style=flat-square)
-![Hackathon](https://img.shields.io/badge/hackathon-Gemini%20Live%20Agent%20Challenge-4285F4?style=flat-square&logo=google)
-![IDE](https://img.shields.io/badge/IDE-Google%20Antigravity-673AB7?style=flat-square&logo=googlecloud)
-![Cloud](https://img.shields.io/badge/deployed-Cloud%20Run-blue?style=flat-square&logo=googlecloud)
-![Version](https://img.shields.io/badge/version-v1.6.0-green?style=flat-square)
+![Status](https://img.shields.io/badge/status-MVP-brightgreen?style=flat-square)
+![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4?style=flat-square&logo=google)
+![ADK](https://img.shields.io/badge/Framework-Google%20ADK-673AB7?style=flat-square&logo=google)
+![Cloud](https://img.shields.io/badge/Hosted-Google%20Cloud-0F9D58?style=flat-square&logo=googlecloud)
+![Version](https://img.shields.io/badge/version-v2.0.0-orange?style=flat-square)
 
 > **Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child.**
 
-Gemini Tales is an interactive storytelling experience that blends real-time AI conversation with physical activity. Built with a modern **React + Vite** frontend, it leverages the **Gemini Live API** for magical conversation and vision, while a specialized **multi-agent backend** (built with Google ADK) works behind the scenes to research local legends, verify safety, and craft movement-based "Hero's Challenges."
+Gemini Tales is an immersive interactive storytelling experience that blends real-time AI conversation with physical activity. Built with a premium **React 19 + Vite** frontend, it leverages the **Gemini Live API** for low-latency dialogue and vision, while a specialized **multi-agent backend** (built with Google ADK) handles narrative orchestration, safety validation, and cinematic character generation.
+
+---
+
+## 📺 Watch in Action
+
+[![Gemini Tales Demo](https://img.youtube.com/vi/DWHs0eOIf_Q/maxresdefault.jpg)](https://youtu.be/DWHs0eOIf_Q)
 
 ---
 
 ## 🎭 Dual Storytelling Modes
 
-Gemini Tales now offers two distinct ways to experience the magic:
+Gemini Tales offers two distinct ways to experience the magic:
 
-| Mode | Narrative Style | Technology |
+| Feature | 🎙️ Live Mode (Spontaneous) | 🤖 Agent Mode (Structured) |
 |---|---|---|
-| 🎙️ **Live Mode** | Spontaneous, highly interactive, and evolving based on every word the child says. | **Gemini Live 2.5 Flash** |
-| 🤖 **Agent Mode** | Narrative structure pre-crafted by the agent network for deep storytelling and safety. | **Agent Pipeline (3.1 Pro)** + **Live Narrator** |
+| **Core Concept** | Quick, free-form play where anything can happen instantly. | Deep, narratively rich journeys pre-crafted by a team of AI experts. |
+| **Preparation** | No wait time. Jump straight into the action. | 30-60s "Magical Brewing" while agents research and weave the plot. |
+| **Technology** | Direct **Gemini Live 2.5 Flash** session. | **Orchestrator (3.1 Pro Thinking)** + **Live Narrator**. |
+| **Physical Flow** | Spontaneous activities. | Story-driven exercise challenges. |
 
 ---
 
-## 🧚 The Experience: Live Multimodal Storytelling
+## 🏗️ Project Structure
 
-The frontend is a direct bridge to **Gemini 2.5 Flash Native Audio**, allowing for a unified **Voice + Vision** interaction.
-
-| Feature | Magic Behind the Scenes |
-|---|---|
-| 🎙️ **Stable Voice Live** | Interruption-aware, low-latency conversation (2.5 Flash Native Audio). |
-| 📸 **Visual Awareness** | Real-time video stream (1 FPS) allows the AI to "see" costumes, toys, and movements. |
-| 🎨 **Dynamic Illustrations** | Powered by **Gemini 3.1 Flash**, generating watercolor-style art that evolves with the plot. |
-| ✨ **Character Workshop** | Create consistent fairytale avatars via text or **photo-to-avatar** transformation using **Gemini 2.5 Flash-Image**. |
-| ⚡ **Agent-Driven Context** | In Agent Mode, the **Storysmith** network researches and crafts a unique plot foundation before the curtain rises. |
-| 🎮 **Interactive Challenges** | The AI pauses the story for "Hero's Challenges," requiring physical actions (jumping, waving) detected via video feed. |
+- **`frontend/`**: React 19 application using Tailwind CSS and Gemini Live SDK.
+- **`backend/app/`**: **Main Agent (Puck)** — the Live Narrator that handles real-time voice, vision, and telling the story.
+- **`backend/agents/`**: **Supporting Agents** — background microservices for Researcher, Judge, and Storysmith.
+  - **`backend/agents/run_local.ps1`**: Local orchestrator to wake up all supporting agents.
 
 ---
 
-## 🤖 The Brain: Multi-Agent Story Engine
+## 🧚 Magic Behind the Scenes
 
-Our backend uses the **Google Agent Development Kit (ADK)** and the **A2A (Agent-to-Agent) protocol**, following a robust multi-agent architecture.
-
-### 🎭 Meet the Agents
-
-| Agent | Architecture Highlights | Performance Config |
-|---|---|---|
-| **Adventure Seeker** | Multi-step reasoning for physical activity planning. | **Gemini 3.1 Flash-Lite** + Grounding with Google Search. |
-| **Guardian of Balance** | Strict safety validation using Pydantic schemas. | **Gemini 3.1 Flash-Lite** (Temp 0.1). |
-| **Storysmith** | Advanced narrative weaving and character depth. | **Gemini 3.1 Pro** for literary quality. |
+- 🌿 **Cinematic Animation**: **Puck** comes to life with **Veo 3.1**, generating 4-second magical video previews.
+- ✌️ **Magic Sign Detection**: Real-time visual recognition: Stories only begin when Puck sees the "Magic Sign" (two fingers up).
+- 📸 **Portrait Transformation**: Upload a photo to see the child transformed into a watercolor fairytale character.
+- 🎨 **Visual Consistency**: High-quality scene illustrations are automatically generated by **Gemini 2.5 Flash-Image** as the story unfolds.
+- ⭐ **Achievements & Badges**: Complete physical challenges (like "Hop like a bunny") to unlock magical badges and track your hero's journey in real-time.
 
 ---
 
-## ⚡ Optimization: Gemini 3.1 Flash-Lite & Pro
+## 🕹️ Interactive Control Center
 
-We have upgraded our agent network to the **Gemini 3.1 Preview** family:
-- **Storysmith (3.1 Pro)**: Enhanced reasoning and "Thinking" levels (Medium) for richer, more complex narratives and better agentic orchestration.
-- **Background Agents (3.1 Flash-Lite)**:
-    - **Cost-Efficiency**: Most cost-efficient for high-volume traffic.
-    - **Latency**: Low-latency for fast pre-story generation.
-    - **Reliability**: Improved instruction following for strict safety validation.
+The "Magic Mirror" cockpit provides full transparency and control over the AI experience:
 
----
-
-## 🏗️ Architecture
-
-For a detailed deep-dive into the system design, component responsibilities, and data flows, please refer to the [**ARCHITECTURE.md**](./ARCHITECTURE.md) document.
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Python** 3.10+ & **Node.js** 20+
-- **[uv](https://docs.astral.sh/uv/)** for backend management.
-- **Google Cloud Project** with Vertex AI enabled.
-
-### 1. Backend Launch
-The backend runs five distributed services: the App, three specialized agents, and an orchestrator.
-
-#### **Easy Mode (Windows)**
-```powershell
-# Starts all 5 services with automatic cleanup & dependency sync
-.\run_local.ps1
-```
-
-#### **Manual Launcher**
-```bash
-# Start microservices (Leaf Agents)
-uv run shared/adk_app.py agents/researcher --port 8001 --a2a
-uv run shared/adk_app.py agents/judge --port 8002 --a2a
-uv run shared/adk_app.py agents/content_builder --port 8003 --a2a
-
-# Start Orchestrator & Gateway
-uv run shared/adk_app.py agents/orchestrator --port 8004
-uv run app/main.py
-```
+- 🔌 **API Lifecycle Management**: One-click connection to the Gemini Pulse with real-time status tracking.
+- 🎙️ **Multimodal Inputs**: Live switching between different microphones and cameras to find the best angle for the Magic Sign.
+- 💬 **Conversation Hub**: A dual-stream chat system that combines real-time AI transcriptions with manual text input.
+- 🔍 **Debug Console**: A dedicated "Technician's View" showing the architectural heartbeat, device sync events, and ADK protocol logs.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: **React 19**, **Vite**, **TypeScript** (v1.1 Migration), and **Tailwind CSS**.
-- **Intelligence**: **Gemini Live 2.5 Flash**, **Gemini 3.1 Flash-Lite/Pro Preview**.
-- **Core Framework**: **Google ADK** & **Agent-to-Agent (A2A)** Protocol.
-- **Infrastructure**: **FastAPI** (Python 3.12), **WebSockets**, and **Google Cloud Run**.
-- **Observability**: **OpenTelemetry** with **Google Cloud Trace**.
-- **Dev Tools**: **Antigravity IDE** for agentic orchestration and debugging.
+- **Frontend**: React 19, TypeScript, Tailwind CSS.
+- **AI Models**: 
+  - **Gemini Live 2.5 Flash** (Real-time Audio/Vision)
+  - **Gemini 3.1 Pro & Flash-Lite** (Agentic Reasoning)
+  - **Veo 3.1** (Cinematic Video Generation)
+  - **Gemini 2.5 Flash-Image** (Character Avatars)
+- **Backend**: FastAPI, Google ADK, WebSockets.
+- **Hosting**: Google Cloud Run, Cloud Artifact Registry.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Python 3.10+ and `uv` installed.
+- Node.js 18+ and `npm`.
+- Google Cloud Project with Gemini API access.
+
+### 2. Launch Instructions (Local Development)
+
+To run the full experience locally, start these components in separate terminals:
+
+**A. Start ADK Agents (The Brain)**
+```powershell
+cd backend/agents
+.\run_local.ps1
+```
+*This starts the sub-agents on ports 8001–8004 required for Agent Mode.*
+
+**B. Start Main Agent (Puck)**
+```bash
+cd backend
+uv sync
+uv run python app/main.py
+```
+*Starts Puck, the Live Narrator, ready to see and hear you (Port 8000).*
+
+**C. Start Frontend UI**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 3. Production Architecture
+In production, agents are hosted on **Google Cloud Run**. The app automatically connects to them via URLs defined in your `.env`.
+
+---
+
+## 🧪 Testing & Interactive Guide
+
+Follow these steps to ensure a magical and stable session:
+
+### 1. The Character Workshop
+- **Customize Puck**: Enter a description for your character or upload a photo to create a personalized fairytale avatar.
+- **Bring Him to Life**: Once Puck is generated, click the **Animate** button to see him start moving! (Powered by **Veo 3.1**).
+- **Choose Your Journey**: Select **Live Mode** for spontaneous play or **Agent Mode** for a structured, multi-agent story.
+
+### 2. Ignition
+- **Live Mode**: Click **Connect API** to establish a direct link with Gemini.
+- **Agent Mode**: Click **🚀 Generate Story with Agents** to begin the "Magical Brewing" process.
+
+### 3. Magical Interaction
+- **Listen & Act**: Follow the spoken instructions from Puck.
+- **Watch the Magic**: As you journey through the tale, Puck will automatically generate beautiful illustrations for every new scene.
+- **Earn Badges**: Successfully complete physical tasks to unlock **Achievements** and see your badge collection grow!
+- **Voice Response**: Select your **Microphone** and click **Start Audio** to talk to the mirror.
+- **Vision Recognition**: Select your **Camera** and click **Start Video** to show your face and the "Magic Sign".
+- **Chat Fallback**: If you're in a quiet place, you can also type messages directly into the **Chat Hub**.
+
+### 4. Troubleshooting
+- **No Sound/Image?**: Ensure the correct device is selected in the **Microphone** and **Camera** dropdowns before clicking "Start".
+- **Connection**: Check the **Debug Console** to verify that the WebSocket status is "Connected".
 
 ---
 
