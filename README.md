@@ -29,7 +29,7 @@ Gemini Tales offers two distinct ways to experience the magic:
 | Feature | 🎙️ Live Mode (Spontaneous) | 🤖 Agent Mode (Structured) |
 |---|---|---|
 | **Puck's Role** | **The Improviser**: Composes and narrates purely on the fly. | **The Narrator**: Brings a carefully crafted script to life. |
-| **Preparation** | No wait time. Jump straight into the action. | 30-60s "Magical Brewing" context formation. |
+| **Preparation** | No wait time. Jump straight into the action. | 30-60s "Story Crafting" context formation. |
 | **Backend Agents** | Idle. | **Active Background**: Researching and weaving the plot. |
 | **Technology** | Direct **Gemini Live 2.5 Flash** session. | **Orchestrator (3.1 Pro)** + **Live Narrator**. |
 | **Visual Flow** | Interleaved watercolor illustrations. | Themed story-driven scenes. |
@@ -44,6 +44,39 @@ Gemini Tales offers two distinct ways to experience the magic:
 - **`backend/app/`**: **Main Agent (Puck)** — the Live Narrator that handles real-time voice, vision, and telling the story.
 - **`backend/agents/`**: **Supporting Agents** — background microservices for Researcher, Judge, and Storysmith.
   - **`backend/agents/run_local.ps1`**: Local orchestrator to wake up all supporting agents.
+
+### 🏛️ High-Level Architecture
+
+```mermaid
+graph TD
+    User([User]) <--> Browser["Browser (Magic Mirror UI)"]
+    
+    subgraph "Main Agent (Puck)"
+        Browser <-->|WebSocket| LiveBridge[Live Bridge :8000]
+        LiveBridge <--> MediaFactory[Media Factory]
+    end
+    
+    subgraph "Google AI & Cloud Services"
+        LiveBridge <-->|WebSocket| GeminiLive[Gemini Live 2.5 Flash]
+        MediaFactory -->|Video Gen| Veo[Veo 3.1]
+        MediaFactory -->|Image Gen| FlashImage[Gemini 2.5 Flash-Image]
+        Orchestrator -->|Reasoning| GeminiPro[Gemini 3.1 Pro]
+    end
+    
+    subgraph "Supporting Agents (ADK Brain)"
+        LiveBridge -->|HTTP| Orchestrator[Orchestrator :8004]
+        Orchestrator <-->|A2A| Researcher[Researcher :8001]
+        Orchestrator <-->|A2A| Judge[Judge :8002]
+        Orchestrator <-->|A2A| Storysmith[Storysmith :8003]
+    end
+    
+    style Browser fill:#f9f,stroke:#333,stroke-width:2px
+    style LiveBridge fill:#f9f,stroke:#333,stroke-width:2px
+    style Orchestrator fill:#ccf,stroke:#333,stroke-width:2px
+    style MediaFactory fill:#fff4dd,stroke:#d4a017,stroke-width:2px
+```
+
+> 📖 **Deep Dive**: For a detailed look at system design, data flows, and design decisions, see the [**Full Architecture Documentation**](ARCHITECTURE.md).
 
 ---
 
@@ -130,7 +163,7 @@ Follow these steps to ensure a magical and stable session:
 
 ### 2. Ignition
 - **Live Mode**: Click **Connect API** to establish a direct link with Gemini.
-- **Agent Mode**: Click **🚀 Generate Story with Agents** to begin the "Magical Brewing" process.
+- **Agent Mode**: Click **🚀 Generate Story with Agents** to begin the story crafting process.
 
 ### 3. Magical Interaction
 - **Listen & Act**: Follow the spoken instructions from Puck.

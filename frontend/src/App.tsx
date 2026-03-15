@@ -651,7 +651,7 @@ const App: React.FC = () => {
             >
               {accumulatedStory.length === 0 && !aiTranscription ? (
                 <p className="text-gray-400 italic text-center text-xl">
-                  {appState === 'STORYTELLING' ? "The magic is brewing..." : "Your story awaits"}
+                  {appState === 'STORYTELLING' ? "The magic is unfolding..." : "Your story awaits"}
                 </p>
               ) : (
                 <div className="space-y-3">
