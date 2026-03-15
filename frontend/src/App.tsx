@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import type { AppState, Achievement, StoryMode } from './types';
-import { GeminiLiveAPI, FunctionCallDefinition } from './utils/geminilive';
+import { GeminiLiveAPI } from './utils/geminilive';
 import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
-import { SYSTEM_INSTRUCTION, AGENT_SYSTEM_INSTRUCTION, INITIAL_ACHIEVEMENTS } from './config';
+import { INITIAL_ACHIEVEMENTS } from './config';
 import { ModeSelector } from './components/ModeSelector';
 import { useAgentStory } from './hooks/useAgentStory';
 
@@ -21,68 +21,6 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (!PROJECT_ID || !MODEL_ID || !MODEL_ID_IMAGE || !GEMINI_API_KEY) {
   throw new Error('Missing required environment variables (PROJECT_ID, MODEL_ID, etc.)');
-}
-
-
-
-class GenerateIllustrationTool extends FunctionCallDefinition {
-  callback: (prompt: string) => void;
-  constructor(callback: (prompt: string) => void) {
-    super(
-      "generateIllustration",
-      "Generates a watercolor style illustration.",
-      { type: "object", properties: { prompt: { type: "string" } } },
-      ["prompt"]
-    );
-    this.callback = callback;
-  }
-  functionToCall(parameters: any) { this.callback(parameters.prompt); }
-}
-
-class AwardBadgeTool extends FunctionCallDefinition {
-  callback: (badgeId: string) => void;
-  constructor(callback: (badgeId: string) => void) {
-    super(
-      "awardBadge",
-      "Awards a specific badge to the child.",
-      { 
-        type: "object", 
-        properties: { 
-          badgeId: { 
-            type: "string", 
-            enum: ['bunny_hop', 'wizard_wave', 'curious_explorer', 'graceful_leaf', 'story_lover'],
-            description: "The unique ID of the badge to award."
-          } 
-        } 
-      },
-      ["badgeId"]
-    );
-    this.callback = callback;
-  }
-  functionToCall(parameters: any) { this.callback(parameters.badgeId); }
-}
-
-class ShowChoiceTool extends FunctionCallDefinition {
-  callback: (options: string[]) => void;
-  constructor(callback: (options: string[]) => void) {
-    super(
-      "showChoice",
-      "Shows a set of choice buttons for the child to choose the next step in the story.",
-      { 
-        type: "object", 
-        properties: { 
-          options: { 
-            type: "array", 
-            items: { type: "string" },
-            description: "A list of 2-3 short choices for the child."
-          } 
-        } 
-      },
-      ["options"]
-    );
-    this.callback = callback;
-  }
-  functionToCall(parameters: any) { this.callback(parameters.options); }
 }
 
 const App: React.FC = () => {
