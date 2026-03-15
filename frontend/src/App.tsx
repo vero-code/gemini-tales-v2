@@ -414,6 +414,12 @@ const App: React.FC = () => {
               setAppState('STORYTELLING');
               appendChat("SYSTEM", "Setup Complete. Ready!", "system");
               logDebug("✨ Protocol Synchronized! Puck is awake.");
+              
+              if (storyMode === 'agent' && storyText) {
+                  logDebug("🤫 Sending drafted story to Puck...");
+                  const hiddenPrompt = `[SYSTEM MAIN INSTRUCTION - Do not say this out loud]: We've already prepared the story. Your goal is to guide the child through this exact story interactively. Tell it step by step, asking them to do the physical activities. Here is the story blueprint:\n\n${storyText}`;
+                  liveClientRef.current?.sendTextMessage(hiddenPrompt);
+              }
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {
                 if (data && typeof data.text === 'string') {
                     const fullText = data.text;
@@ -665,20 +671,6 @@ const App: React.FC = () => {
         <p className="text-xl text-gray-500 mt-2 font-medium italic">A magical world where stories come to life!</p>
       </header>
 
-      <div>
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
-          <div className="flex gap-3 mb-4">
-              {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
-              {storyMode === 'live' && (
-                <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
-              )}
-              <button onClick={disconnect} disabled={connectionStatus !== 'Connected'} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
-          </div>
-          <div className="text-sm font-medium text-gray-600">
-              Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
-          </div>
-      </div>
-
       {/* --- MAIN STORY EXPERIENCE (Beautiful UI) --- */}
       <main className="w-full max-w-7xl flex flex-col lg:flex-row gap-8 z-10">
         <div className="flex-1 flex flex-col gap-6">
@@ -777,14 +769,6 @@ const App: React.FC = () => {
                 <span className="font-black text-xs uppercase tracking-tighter">Camera Off</span>
               </div>
             )}
-            <div className="absolute top-6 right-6">
-               <button 
-                  onClick={() => setShowBiometricLock(true)} 
-                  className="bg-cyan-500/80 hover:bg-cyan-400 text-white px-3 py-1.5 rounded-full text-xs font-black tracking-widest uppercase shadow-lg border border-cyan-300 transition-all active:scale-95"
-               >
-                 Verify Biometrics
-               </button>
-            </div>
             <div className="absolute bottom-6 left-6 bg-black/60 px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md">
                <div className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
                <span className="text-white text-[12px] font-black tracking-widest uppercase">{isUserSpeaking ? "User Speaking" : "AI Storytelling"}</span>
@@ -856,7 +840,21 @@ const App: React.FC = () => {
               </div>
             )}
 
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
+              <div className="flex gap-3 mb-4">
+                  {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
+                  {storyMode === 'live' && (
+                    <button onClick={connect} disabled={connectionStatus === 'Connected'} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Connect API</button>
+                  )}
+                  <button onClick={disconnect} disabled={connectionStatus !== 'Connected'} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Disconnect</button>
+              </div>
+              <div className="text-sm font-medium text-gray-600">
+                  Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
+              </div>
+          </div>
 
+            {/* --- AUDIO CONTROLS --- */}
             <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Microphone</label>

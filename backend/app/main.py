@@ -14,6 +14,7 @@ from opentelemetry.sdk.trace import TracerProvider, export
 from app.routers.avatar import router as avatar_router
 from app.routers.proxy import router as proxy_router
 from app.routers.puck_live import router as puck_live_router
+from app.routers.agent_story import router as agent_story_router
 
 load_dotenv()
 
@@ -46,6 +47,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(avatar_router, prefix="/api/avatar", tags=["avatar"])
+app.include_router(agent_story_router, prefix="/api", tags=["agent"])
 app.include_router(proxy_router, prefix="/ws", tags=["proxy"])
 app.include_router(puck_live_router, prefix="/ws", tags=["puck_live"])
 
