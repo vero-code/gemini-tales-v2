@@ -269,9 +269,10 @@ if __name__ == "__main__":
     gen = StoryAvatarGenerator()
     try:
         p_path = gen.generate_initial_avatar("a little girl with red pigtails in a green dress")
-        print(f"Generated portrait: {p_path}")
+        # print(f"Generated portrait: {p_path}")
         
         a_path = gen.generate_consistent_action("the character is casting a magic spell with a wooden wand")
-        print(f"Generated action: {a_path}")
+        # print(f"Generated action: {a_path}")
     except Exception as e:
-        print(f"Error: {e}")
+        # print(f"Error: {e}")
+        pass

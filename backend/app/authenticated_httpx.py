@@ -79,7 +79,8 @@ def create_authenticated_client(
                                 credentials
                             )
                     except subprocess.SubprocessError:
-                        print("ERROR: Unable to fetch identity token.")
+                        # print("ERROR: Unable to fetch identity token.")
+                        pass
             if id_token:
                 request.headers["Authorization"] = f"Bearer {id_token}"
             yield request

@@ -41,14 +41,14 @@ async def chat_stream(req: ChatRequest):
             session_id = f"story_{req.user_id}"
             
             # 1. Ensure session exists FIRST
-            print(f"DEBUG: Checking session {session_id} for user {req.user_id}")
+            # print(f"DEBUG: Checking session {session_id} for user {req.user_id}")
             session = await session_service.get_session(
                 app_name="gemini_tales_proxy", 
                 user_id=req.user_id, 
                 session_id=session_id
             )
             if not session:
-                print(f"DEBUG: Session not found, creating it...")
+                # print(f"DEBUG: Session not found, creating it...")
                 await session_service.create_session(
                     app_name="gemini_tales_proxy", 
                     user_id=req.user_id, 
@@ -59,10 +59,10 @@ async def chat_stream(req: ChatRequest):
                     user_id=req.user_id, 
                     session_id=session_id
                 )
-                print(f"DEBUG: Session created: {session is not None}")
+                # print(f"DEBUG: Session created: {session is not None}")
             
             # 2. Instantiate Runner AFTER session is ready
-            print(f"DEBUG: Initializing Runner for {orchestrator_agent.name} at {orchestrator_url}")
+            # print(f"DEBUG: Initializing Runner for {orchestrator_agent.name} at {orchestrator_url}")
             runner = Runner(
                 app_name="gemini_tales_proxy",
                 agent=orchestrator_agent,

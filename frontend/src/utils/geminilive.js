@@ -65,7 +65,7 @@ class MultimodalLiveResponseMessage {
         this.type = MultimodalLiveResponseType.AUDIO;
       }
     } catch {
-      console.log("⚠️ Error parsing response data: ", data);
+      // console.log("⚠️ Error parsing response data: ", data);
     }
   }
 }

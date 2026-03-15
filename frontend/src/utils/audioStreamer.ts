@@ -38,7 +38,7 @@ export class AudioStreamer {
             this.audioQueue.push(float32Data);
             this.playNext();
         } catch (e) {
-            console.error('[AudioStreamer] Error in addPCM16:', e);
+            // console.error('[AudioStreamer] Error in addPCM16:', e);
         }
     }
 
@@ -51,7 +51,7 @@ export class AudioStreamer {
             try {
                 await this.context.resume();
             } catch (e) {
-                console.error("Failed to resume", e);
+                // console.error("Failed to resume", e);
             }
         }
 
@@ -75,7 +75,7 @@ export class AudioStreamer {
             };
             source.start();
         } catch (e) {
-            console.error('[AudioStreamer] Error in playNext:', e);
+            // console.error('[AudioStreamer] Error in playNext:', e);
             this.isPlaying = false;
             this.playNext();
         }

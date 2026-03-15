@@ -26,7 +26,7 @@ async def _generate_and_dispatch(scene_description: str):
         path = await asyncio.to_thread(generator.generate_scene_illustration, scene_description)
         filename = os.path.basename(path)
         url = f"/avatars/{filename}"
-        logger.info(f"✅ Illustration generated and available at: {url}")
+        # logger.info(f"✅ Illustration generated and available at: {url}")
         
         # Dispatch to any active websockets
         for cb in illustration_callbacks:
@@ -45,7 +45,7 @@ async def draw_story_scene(scene_description: str) -> str:
     Args:
         scene_description: A detailed description of the scene to illustrate.
     """
-    logger.info(f"🛠️ Tool call: draw_story_scene with description: {scene_description}")
+    # logger.info(f"🛠️ Tool call: draw_story_scene with description: {scene_description}")
     
     loop = asyncio.get_running_loop()
     loop.create_task(_generate_and_dispatch(scene_description))
@@ -60,7 +60,7 @@ def do_physical_exercise(exercise_name: str, magic_word: str) -> str:
         exercise_name: The name or description of the exercise.
         magic_word: A funny magic word for the child to shout.
     """
-    logger.info(f"🛠️ Tool call: do_physical_exercise - {exercise_name} with magic word: {magic_word}")
+    # logger.info(f"🛠️ Tool call: do_physical_exercise - {exercise_name} with magic word: {magic_word}")
     return f"Exercise started: {exercise_name} with word {magic_word}"
 
 def awardBadge(badgeId: str) -> str:
@@ -71,7 +71,7 @@ def awardBadge(badgeId: str) -> str:
         badgeId: The ID of the badge to award. Must be one of:
                  'bunny_hop', 'wizard_wave', 'curious_explorer', 'graceful_leaf', 'story_lover'
     """
-    logger.info(f"🛠️ Tool call: awardBadge - awarding {badgeId}")
+    # logger.info(f"🛠️ Tool call: awardBadge - awarding {badgeId}")
     
     # Dispatch to any active websockets
     for cb in badge_callbacks:

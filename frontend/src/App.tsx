@@ -191,7 +191,7 @@ const App: React.FC = () => {
 
   // --- UTILS ---
   const logDebug = (msg: string) => {
-    console.log(`[DEBUG] ${msg}`);
+    // console.log(`[DEBUG] ${msg}`);
     setDebugInfo(prev => `${msg}\n${prev}`.slice(0, 1500));
   };
   
@@ -388,7 +388,7 @@ const App: React.FC = () => {
         const baseUrl = PROXY_URL.split('/ws/proxy')[0]; 
         const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}?mode=${storyMode}`;
 
-        console.log("Starting connection to ADK:", adkUrl);
+        // console.log("Starting connection to ADK:", adkUrl);
         logDebug(`Target URL: ${adkUrl}`);
 
         const client = new GeminiLiveAPI(adkUrl, PROJECT_ID, MODEL_ID);
@@ -421,7 +421,7 @@ const App: React.FC = () => {
                   
                   const hiddenPrompt = `STORY BLUEPRINT:\n${storyText}\n\nINSTRUCTION: Tell this story exactly. Do not improvise other adventures. Greet the child now.`;
                   
-                  console.log("📤 [Puck Handoff] Story Length:", storyText.length);
+                  // console.log("📤 [Puck Handoff] Story Length:", storyText.length);
                   liveClientRef.current?.sendTextMessage(hiddenPrompt);
               }
             } else if (msgType === 'OUTPUT_TRANSCRIPTION') {

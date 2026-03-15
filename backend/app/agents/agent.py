@@ -27,10 +27,10 @@ def say_hello(name: Optional[str] = None) -> str:
     """
     if name:
         greeting = f"Hello, {name}!"
-        print(f"--- Tool: say_hello called with name: {name} ---")
+        # print(f"--- Tool: say_hello called with name: {name} ---")
     else:
         greeting = "Hello there!" # Default greeting if name is None or not explicitly passed
-        print(f"--- Tool: say_hello called without a specific name (name_arg_value: {name}) ---")
+        # print(f"--- Tool: say_hello called without a specific name (name_arg_value: {name}) ---")
     return greeting
 
 root_agent = Agent(

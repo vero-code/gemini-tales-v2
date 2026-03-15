@@ -16,7 +16,7 @@ async def gemini_live_proxy(websocket: WebSocket):
     Extracts Project ID and Model from the query string and connects to Google Cloud.
     """
     await websocket.accept()
-    logger.info("🔌 New WebSocket client connected to proxy")
+    # logger.info("🔌 New WebSocket client connected to proxy")
     
     server_websocket = None
     
@@ -43,13 +43,13 @@ async def gemini_live_proxy(websocket: WebSocket):
         }
         ssl_context = ssl.create_default_context(cafile=certifi.where())
         
-        logger.info(f"🚀 Connecting to Gemini API: {service_url.split('?')[0]}...")
+        # logger.info(f"🚀 Connecting to Gemini API: {service_url.split('?')[0]}...")
         
         async with websockets.connect(
             service_url, additional_headers=headers, ssl=ssl_context
         ) as s_ws:
             server_websocket = s_ws
-            logger.info("✅ Connected to Gemini API successfully")
+            # logger.info("✅ Connected to Gemini API successfully")
 
             # Channel: Browser -> Google
             async def client_to_server():
@@ -107,9 +107,9 @@ async def gemini_live_proxy(websocket: WebSocket):
         if server_websocket:
             code = getattr(server_websocket, 'close_code', 'Unknown')
             reason = getattr(server_websocket, 'close_reason', 'No reason')
-            logger.info(f"🔌 Proxy connection closed. Google side: {code} ({reason})")
+            # logger.info(f"🔌 Proxy connection closed. Google side: {code} ({reason})")
             try:
                 await server_websocket.close()
             except Exception:
                 pass
-        logger.info("🔌 Proxy connection closed")
+        # logger.info("🔌 Proxy connection closed")

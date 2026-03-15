@@ -17,18 +17,18 @@ export function useGeminiSocket(url: string) {
         ws.current = new WebSocket(url);
 
         ws.current.onopen = () => {
-            console.log('Connected to Gemini Socket');
+            // console.log('Connected to Gemini Socket');
             setStatus('CONNECTED');
         };
 
         ws.current.onclose = () => {
-            console.log('Disconnected from Gemini Socket');
+            // console.log('Disconnected from Gemini Socket');
             setStatus('DISCONNECTED');
             stopStream();
         };
 
         ws.current.onerror = (err) => {
-            console.error('Socket error:', err);
+            // console.error('Socket error:', err);
             setStatus('ERROR');
         };
 
@@ -59,7 +59,7 @@ export function useGeminiSocket(url: string) {
                     });
                 }
             } catch (e) {
-                console.error('Failed to parse message', e, event.data.slice(0, 100));
+                // console.error('Failed to parse message', e, event.data.slice(0, 100));
             }
         };
     }, [url]);
@@ -93,9 +93,9 @@ export function useGeminiSocket(url: string) {
                         }));
                     }
                 });
-                console.log("Microphone recording started");
+                // console.log("Microphone recording started");
             } catch (authErr) {
-                console.error("Microphone access denied or error:", authErr);
+                // console.error("Microphone access denied or error:", authErr);
             }
 
             const canvas = document.createElement('canvas');
@@ -117,7 +117,7 @@ export function useGeminiSocket(url: string) {
                 }
             }, 500);
         } catch (err) {
-            console.error('Error accessing camera:', err);
+            // console.error('Error accessing camera:', err);
         }
     }, []);
 

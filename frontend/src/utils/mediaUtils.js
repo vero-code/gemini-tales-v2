@@ -69,7 +69,7 @@ class AudioStreamer {
           // Send to Gemini with rate info
           if (this.client && this.client.connected) {
             // Log once every few seconds
-            if (Math.random() < 0.01) console.log("Sending audio chunk to Gemini...");
+            // if (Math.random() < 0.01) console.log("Sending audio chunk to Gemini...");
             this.client.sendAudioMessage(base64Audio);
           }
         }
@@ -84,7 +84,7 @@ class AudioStreamer {
       this.isStreaming = true;
       return true;
     } catch (error) {
-      console.error("Failed to start audio streaming:", error);
+      // console.error("Failed to start audio streaming:", error);
       throw error;
     }
   }
@@ -207,7 +207,7 @@ class BaseVideoCapture {
           reader.onloadend = () => {
             const base64 = reader.result.split(",")[1];
             if (this.client && this.client.connected) {
-              if (Math.random() < 0.05) console.log("Sending video frame to Gemini...");
+              // if (Math.random() < 0.05) console.log("Sending video frame to Gemini...");
               this.client.sendImageMessage(base64, "image/jpeg");
             }
           };
@@ -325,7 +325,7 @@ class VideoStreamer extends BaseVideoCapture {
 
       return this.video; // Return video element for preview
     } catch (error) {
-      console.error("Failed to start camera streaming:", error);
+      // console.error("Failed to start camera streaming:", error);
       throw error;
     }
   }
@@ -381,7 +381,7 @@ class ScreenCapture extends BaseVideoCapture {
 
       return this.video; // Return video element for preview
     } catch (error) {
-      console.error("Failed to start screen capture:", error);
+      // console.error("Failed to start screen capture:", error);
       throw error;
     }
   }
@@ -438,7 +438,7 @@ class AudioPlayer {
 
       this.isInitialized = true;
     } catch (error) {
-      console.error("Failed to initialize audio player:", error);
+      // console.error("Failed to initialize audio player:", error);
       throw error;
     }
   }
@@ -474,7 +474,7 @@ class AudioPlayer {
       // Send to worklet for playback
       this.workletNode.port.postMessage(float32Data);
     } catch (error) {
-      console.error("Error playing audio chunk:", error);
+      // console.error("Error playing audio chunk:", error);
       throw error;
     }
   }

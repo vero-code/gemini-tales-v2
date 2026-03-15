@@ -52,7 +52,7 @@ export class AudioRecorder {
             this.processor.connect(this.audioContext.destination);
 
         } catch (error) {
-            console.error("[AudioRecorder] Error starting audio recording:", error);
+            // console.error("[AudioRecorder] Error starting audio recording:", error);
             throw error;
         }
     }

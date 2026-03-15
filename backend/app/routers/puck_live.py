@@ -34,7 +34,7 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
     if ot:
         text = getattr(ot, 'text', "")
         final = getattr(ot, 'final', False)
-        logger.info(f"📝 [ADK Event] Transcription: '{text}' (final: {final})")
+        # logger.info(f"📝 [ADK Event] Transcription: '{text}' (final: {final})")
         results.append({
             "serverContent": {
                 "outputTranscription": {
@@ -55,7 +55,7 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
                 # logger.info(f"🔊 [ADK Event] Audio part: {len(audio_base64)} chars") # SILENCED to keep console clean
                 gemini_parts.append({"inlineData": {"data": audio_base64, "mimeType": "audio/pcm;rate=16000"}})
             elif hasattr(part, 'text') and part.text:
-                logger.info(f"💬 [ADK Event] Puck says: '{part.text[:100]}...'")
+                # logger.info(f"💬 [ADK Event] Puck says: '{part.text[:100]}...'")
                 gemini_parts.append({"text": part.text})
         
         if gemini_parts:
@@ -104,12 +104,12 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
                         match = re.search(r'(/avatars/[\w\-\.]+\.(png|jpg|jpeg|webp|mp4))', result_text)
                         if match:
                             url = match.group(1)
-                            logger.info(f"🎨 [ADK Event] Pushing illustration URL to frontend: {url}")
+                            # logger.info(f"🎨 [ADK Event] Pushing illustration URL to frontend: {url}")
                             results.append({"type": "ILLUSTRATION", "data": {"url": url}})
 
     # 5. Turn Complete
     if not getattr(event, 'partial', False):
-        logger.info("🏁 [ADK Event] Turn complete")
+        # logger.info("🏁 [ADK Event] Turn complete")
         results.append({"serverContent": {"turnComplete": True}})
 
     if results:
@@ -124,7 +124,7 @@ def transform_adk_to_gemini_format(event) -> List[Dict]:
             else:
                 log_summary.append(r.get("type", "UNKNOWN"))
         
-        logger.info(f"📤 [ADK Event] Sending to frontend: {', '.join(log_summary)}")
+        # logger.info(f"📤 [ADK Event] Sending to frontend: {', '.join(log_summary)}")
     return results
 
 @router.websocket("/puck_live/{user_id}/{session_id}")
@@ -227,7 +227,7 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
                             image_data = base64.b64decode(data["data"])
                             live_request_queue.send_realtime(types.Blob(mime_type="image/jpeg", data=image_data))
                         elif "text" in data:
-                            logger.info(f"📥 [WebSocket] Received text from frontend: {data['text'][:50]}...")
+                            # logger.info(f"📥 [WebSocket] Received text from frontend: {data['text'][:50]}...")
                             live_request_queue.send_content(types.Content(parts=[types.Part(text=data["text"])]))
                     except Exception as e:
                         logger.error(f"Error parsing upstream JSON: {e}")
