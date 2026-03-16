@@ -16,6 +16,20 @@ Built with a premium **React 19 + Vite** frontend, it leverages the **Gemini Liv
 
 ---
 
+## 📍 Quick Navigation
+
+- [📺 Watch in Action](#-watch-in-action)
+- [🎭 Dual Storytelling Modes](#-dual-storytelling-modes)
+- [🏗️ Project Structure](#-project-structure)
+- [🧚 Magic Behind the Scenes](#-magic-behind-the-scenes)
+- [🕹️ Interactive Control Center](#-interactive-control-center)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [🚀 Getting Started (Run & Deploy)](#-getting-started)
+- [🧪 Testing & Interactive Guide](#-testing--interactive-guide)
+- [👩‍🎓 Hackathon & Build Story](#-hackathon--build-story)
+
+---
+
 ## 📺 Watch in Action
 
 [![Gemini Tales Demo](https://img.youtube.com/vi/DWHs0eOIf_Q/maxresdefault.jpg)](https://youtu.be/DWHs0eOIf_Q)
