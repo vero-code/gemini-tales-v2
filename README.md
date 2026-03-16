@@ -147,8 +147,32 @@ npm install
 npm run dev
 ```
 
-### 3. Production Architecture
-In production, agents are hosted on **Google Cloud Run**. The app automatically connects to them via URLs defined in your `.env`.
+### 3. Cloud Deployment (Google Cloud Run)
+
+To ensure this project is **fully reproducible**, I've included automation scripts that handle the complex deployment of my multi-agent architecture to **Google Cloud Run**.
+
+#### A. Prerequisites for Cloud
+- [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated (`gcloud auth login`).
+- An active Google Cloud Project with Billing enabled.
+- Your `.env` file in `backend/app/` should contain your `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`.
+
+#### B. Deploy Supporting Agents (The Brain)
+These agents (Researcher, Judge, Storysmith, Orchestrator) provide the agentic reasoning for the story mode.
+```powershell
+cd backend/agents
+.\deploy.ps1
+```
+*This script automatically bundles shared logic, configures security, and deploys 4 microservices to Cloud Run.*
+
+#### C. Deploy Main App (Puck + Frontend)
+This deploys the central "Magic Mirror" interface and the Live Narrator.
+```powershell
+# Run from the repository root
+.\deploy_app.ps1
+```
+*This script handles the dual-stage build: compiling the React 19 frontend and wrapping it with the FastAPI/Puck bridge into a single production-ready container.*
+
+> 💡 **Pro-Tip**: After deployment, you can manage all AI parameters (Model IDs, API Keys) directly through the Cloud Run environment variables without needing to re-deploy.
 
 ---
 
