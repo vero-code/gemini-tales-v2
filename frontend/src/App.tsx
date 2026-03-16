@@ -313,6 +313,7 @@ const App: React.FC = () => {
       });
       const data = await response.json();
       if (data.path) {
+        setCurrentIllustration(null); // Clear static image to show video
         setVideoUrl(backendUrl + data.path);
         logDebug("✓ Puck is ALIVE! Animation complete.");
       }
@@ -671,10 +672,10 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col gap-6">
           <div className="glass-card rounded-[40px] overflow-hidden flex-1 shadow-xl flex flex-col relative min-h-[400px] bg-white/60 border border-white/50 backdrop-blur-md">
             <div className="flex-1 bg-white/20 flex items-center justify-center relative">
-              {currentIllustration ? (
+              {videoUrl ? (
+                <video src={videoUrl || undefined} autoPlay loop muted playsInline className="w-full h-full object-cover animate-in fade-in duration-1000" />
+              ) : currentIllustration ? (
                 <img src={currentIllustration || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Story Scene" />
-              ) : videoUrl ? (
-                <video src={videoUrl || undefined} autoPlay loop muted className="w-full h-full object-cover animate-in fade-in duration-1000" />
               ) : (actionUrl || avatarUrl) ? (
                 <img src={actionUrl || avatarUrl || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Puck" />
               ) : (
