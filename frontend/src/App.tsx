@@ -8,22 +8,54 @@ import { ModeSelector } from './components/ModeSelector';
 import { useAgentStory } from './hooks/useAgentStory';
 
 // --- ENV VARIABLES ---
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
-// Auto-detect proxy URL if it points to localhost or is missing (useful for Cloud Run)
+// --- DYNAMIC CONFIGURATION ---
+let PROJECT_ID = import.meta.env.VITE_PROJECT_ID || import.meta.env.VITE_GCP_PROJECT;
+let MODEL_ID = import.meta.env.VITE_MODEL_ID;
+let MODEL_ID_IMAGE = import.meta.env.VITE_MODEL_ID_IMAGE;
+let GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+// Auto-detect proxy URL
 const rawProxyUrl = import.meta.env.VITE_PROXY_URL;
 const PROXY_URL = rawProxyUrl 
   ? rawProxyUrl 
   : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/proxy';
 
-const MODEL_ID = import.meta.env.VITE_MODEL_ID;
-const MODEL_ID_IMAGE = import.meta.env.VITE_MODEL_ID_IMAGE;
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (!PROJECT_ID || !MODEL_ID || !MODEL_ID_IMAGE || !GEMINI_API_KEY) {
-  throw new Error('Missing required environment variables (PROJECT_ID, MODEL_ID, etc.)');
-}
-
 const App: React.FC = () => {
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+
+  // Fetch dynamic config from backend if build-time variables are missing
+  useEffect(() => {
+    const loadConfig = async () => {
+      // If we already have them from Vite build, just proceed
+      if (PROJECT_ID && MODEL_ID && MODEL_ID_IMAGE && GEMINI_API_KEY) {
+        setIsConfigLoaded(true);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/config');
+        if (!response.ok) throw new Error('Failed to fetch backend configuration');
+        const data = await response.json();
+        
+        PROJECT_ID = PROJECT_ID || data.PROJECT_ID;
+        MODEL_ID = MODEL_ID || data.MODEL_ID;
+        MODEL_ID_IMAGE = MODEL_ID_IMAGE || data.MODEL_ID_IMAGE;
+        GEMINI_API_KEY = GEMINI_API_KEY || data.GEMINI_API_KEY;
+
+        if (!PROJECT_ID || !MODEL_ID || !MODEL_ID_IMAGE || !GEMINI_API_KEY) {
+           throw new Error('Some required environment variables are still missing after backend fetch.');
+        }
+        
+        setIsConfigLoaded(true);
+      } catch (err: any) {
+        console.error('Config Load Error:', err);
+        setConfigError(err.message);
+      }
+    };
+
+    loadConfig();
+  }, []);
   // --- STORY STATE ---
   const [appState, setAppState] = useState<AppState | 'IDLE' | 'STARTING' | 'STORYTELLING' | 'ERROR'>('IDLE');
   const [currentIllustration, setCurrentIllustration] = useState<string | null>(null);
@@ -437,7 +469,6 @@ const App: React.FC = () => {
                 functionCalls.forEach((fc: any) => {
                    logDebug(`🛠️ Calling tool: ${fc.name} with arguments: ${JSON.stringify(fc.args)}`);
                    
-                   let resultMsg = "Success";
                    if (fc.name === 'generateIllustration') {
                        generateNewIllustration(fc.args.prompt);
                    } else if (fc.name === 'awardBadge' || fc.name === 'award_badge') {
@@ -576,6 +607,32 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2] font-sans">
+      
+      {/* --- CONFIG LOADING STATE --- */}
+      {!isConfigLoaded && !configError && (
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Waking up the Magic Mirror...</h2>
+          <p className="text-gray-500">Checking the cosmic parameters</p>
+        </div>
+      )}
+
+      {/* --- CONFIG ERROR STATE --- */}
+      {configError && (
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="text-6xl mb-4">🔮❌</div>
+          <h2 className="text-2xl font-bold text-red-600 mb-4">The Magic Mirror is foggy</h2>
+          <div className="bg-red-50 p-4 rounded-xl border border-red-100 max-w-md mb-6">
+            <p className="text-red-800 font-mono text-sm">{configError}</p>
+          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-8 py-3 bg-purple-600 text-white rounded-full font-bold hover:bg-purple-700 transition-colors shadow-lg"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
       
       {/* --- ACHIEVEMENT POPUP --- */}
       {lastAwarded && (

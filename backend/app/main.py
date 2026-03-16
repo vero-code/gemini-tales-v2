@@ -51,6 +51,15 @@ app.include_router(agent_story_router, prefix="/api", tags=["agent"])
 app.include_router(proxy_router, prefix="/ws", tags=["proxy"])
 app.include_router(puck_live_router, prefix="/ws", tags=["puck_live"])
 
+@app.get("/api/config")
+async def get_config():
+    return {
+        "PROJECT_ID": os.getenv("GOOGLE_CLOUD_PROJECT"),
+        "MODEL_ID": os.getenv("MODEL_ID", "gemini-live-2.5-flash-native-audio"),
+        "MODEL_ID_IMAGE": os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview"),
+        "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY")
+    }
+
 # MOUNT STATIC FILES
 # Mount avatars directory
 avatar_dir = os.path.join(os.path.dirname(__file__), "temp_avatars")
@@ -59,7 +68,12 @@ app.mount("/avatars", StaticFiles(directory=avatar_dir), name="avatars")
 
 # Use 'dist' folder for React production build (built in Docker stage)
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+if not os.path.exists(frontend_path):
+    # Try alternate path if context changed
+    frontend_path = "/frontend/dist"
+
 if os.path.exists(frontend_path):
+    logger.info(f"Mounting frontend from {frontend_path}")
     app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
 else:
     logger.warning(f"Frontend dist directory not found at {frontend_path}")
