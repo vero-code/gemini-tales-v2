@@ -271,32 +271,47 @@ All services are started in the correct order by `run_local.ps1`. A 5-second sle
 
 ## 9. Deployment
 
-All five services are containerised with individual `Dockerfile`s and deployed to **Google Cloud Run** via `deploy.ps1`.
+The system is designed for a split deployment strategy using two specialized automation scripts. This ensures that the "Supporting Brain" (internal agents) and the "Interaction Head" (Puck + Frontend) are correctly configured and secured.
 
-**Deployment order** (enforced by the script):
+### 9.1 Two-Stage Automation
 
-1. Adventure Seeker → deployed, URL captured
-2. Guardian of Balance → deployed, URL captured
-3. Storysmith → deployed, URL captured
-4. Orchestrator → deployed (receives agent URLs as env vars), URL captured
-5. App → deployed (receives orchestrator URL as `AGENT_SERVER_URL`)
+1. **Supporting Agents (`backend/agents/deploy.ps1`)**:
+   - Deploys Researcher, Judge, Content Builder, and Orchestrator.
+   - Enforces `--no-allow-unauthenticated` for internal safety.
+   - Orchestrates the capture of service URLs to build the agentic network graph.
+
+2. **Main Application (`deploy_app.ps1`)**:
+   - Deploys the unified **Gemini Tales App** (Puck + Frontend).
+   - Handles the dual-stage build: compiles the React 19 frontend and wraps it with the FastAPI server.
+   - Automatically injects `GOOGLE_CLOUD_PROJECT` and other metadata as environment variables.
+
+### 9.2 Dynamic Configuration Injection
+
+To allow for runtime updates to AI models and parameters without re-compiling the frontend, we use a **Dynamic Config Endpoint**:
+- **Backend**: `GET /api/config` reads secrets (like API Keys and Model IDs) from the Cloud Run environment.
+- **Frontend**: During initialization, the React app fetches this data to self-configure.
+- **Benefit**: Judges can swap models or keys via the Google Cloud console, and the "Magic Mirror" will adapt instantly on the next page refresh.
+
+### 9.3 Service Topology & Security
 
 ```mermaid
 graph TD
-    A[Adventure Seeker] -->|Deployed| B[URL Captured]
-    C[Guardian of Balance] -->|Deployed| D[URL Captured]
-    E[Storysmith] -->|Deployed| F[URL Captured]
+    subgraph "Public Internet"
+        UI[Public App URL]
+    end
     
-    B --> G[Orchestrator]
-    D --> G
-    F --> G
+    subgraph "Google Cloud Run (VPC-Secured)"
+        App["Gemini Tales App (Frontend + Puck)"]
+        Orchestrator["Orchestrator Agent"]
+        Brain["Researcher/Judge/Storysmith Agents"]
+    end
     
-    G -->|Deployed w/ Env Vars| H[Orchestrator URL Captured]
-    H --> I[FastAPI App]
-    I -->|Deployed w/ AGENT_SERVER_URL| J[Public Frontend]
+    UI -->|Unauthenticated| App
+    App -->|OAuth2 Token| Orchestrator
+    Orchestrator -->|A2A + OAuth2| Brain
 ```
 
-The **Gemini Tales App** Cloud Run service is publicly accessible. The four agent services have `--no-allow-unauthenticated` and require a Google OAuth2 bearer token — handled transparently by `authenticated_httpx.py` using Application Default Credentials.
+The **Gemini Tales App** is the only public entry point. All inter-agent communication is secured with Google OAuth2 bearer tokens, managed by `authenticated_httpx.py`.
 
 **Observability:** The FastAPI app instruments traces with **OpenTelemetry** and exports them to **Google Cloud Trace** via `CloudTraceSpanExporter`.
 
