@@ -33,29 +33,33 @@ Gemini Tales is an integrated AI storytelling system built on the Google Agent D
 graph TD
     User([User]) <--> Browser["Browser (Magic Mirror UI)"]
     
-    subgraph "Main Agent (Puck)"
-        Browser <-->|WebSocket| LiveBridge[Live Bridge :8000]
-        LiveBridge <--> MediaFactory[Media Factory]
+    subgraph "Main Interaction Agent (Puck)"
+        Browser <-->|WebSocket| Puck["Puck (Live Narrator)"]
+        subgraph "Puck's Toolbox"
+            Illustrator["Illustration Engine"]
+            Awards["Achievement Manager"]
+        end
+        Puck <--> Illustrator
+        Puck <--> Awards
     end
     
-    subgraph "Google AI & Cloud Services"
-        LiveBridge <-->|WebSocket| GeminiLive[Gemini Live 2.5 Flash]
-        MediaFactory -->|Video Gen| Veo[Veo 3.1]
-        MediaFactory -->|Image Gen| FlashImage[Gemini 2.5 Flash-Image]
-        Orchestrator -->|Reasoning| GeminiPro[Gemini 3.1 Pro]
+    subgraph "Google AI Infrastructure"
+        Puck <-->|Multimodal Flow| GeminiLive[Gemini Live 2.5 Flash]
+        Illustrator -->|Video Generation| Veo[Veo 3.1]
+        Illustrator -->|Dynamic Rendering| FlashImage[Gemini 2.5 Flash-Image]
     end
     
-    subgraph "Supporting Agents (ADK Brain)"
-        LiveBridge -->|HTTP| Orchestrator[Orchestrator :8004]
-        Orchestrator <-->|A2A| Researcher[Researcher :8001]
-        Orchestrator <-->|A2A| Judge[Judge :8002]
-        Orchestrator <-->|A2A| Storysmith[Storysmith :8003]
+    subgraph "Supporting Brain (Agent Mode)"
+        Puck -->|Request Pipeline| Orchestrator[Orchestrator]
+        Orchestrator <-->|A2A| Researcher[Researcher]
+        Orchestrator <-->|A2A| Judge[Judge]
+        Orchestrator <-->|A2A| Storysmith[Storysmith]
     end
     
     style Browser fill:#f9f,stroke:#333,stroke-width:2px
-    style LiveBridge fill:#f9f,stroke:#333,stroke-width:2px
+    style Puck fill:#f9f,stroke:#333,stroke-width:2px
     style Orchestrator fill:#ccf,stroke:#333,stroke-width:2px
-    style MediaFactory fill:#fff4dd,stroke:#d4a017,stroke-width:2px
+    style Illustrator fill:#fff4dd,stroke:#d4a017,stroke-width:2px
 ```
 
 ---
