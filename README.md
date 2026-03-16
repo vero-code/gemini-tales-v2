@@ -32,7 +32,11 @@ Built with a premium **React 19 + Vite** frontend, it leverages the **Gemini Liv
 
 ## 📺 Watch in Action
 
+Gemini Tales - Early Submission:
 [![Gemini Tales Demo](https://img.youtube.com/vi/DWHs0eOIf_Q/maxresdefault.jpg)](https://youtu.be/DWHs0eOIf_Q)
+
+Gemini Tales - Newer Demo:
+[![Gemini Tales Newer Demo](https://img.youtube.com/vi/DCOfdM-uKt0/maxresdefault.jpg)](https://youtu.be/DCOfdM-uKt0)
 
 ---
 
