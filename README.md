@@ -1,4 +1,9 @@
-# ✨ Gemini Tales
+# ✨ Gemini Talesv2: The Evolution
+
+**This is the development repository for Gemini Tales post-hackathon.**
+
+> [!IMPORTANT]
+> **Stable Contest Version:** If you are a judge or looking for the original hackathon submission (frozen as of March 16, 2026), please visit the [Original Gemini Tales Repository](https://github.com/vero-code/gemini-tales).
 
 > **The story that doesn't move until you do.**
 
