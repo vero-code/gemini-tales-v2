@@ -357,6 +357,7 @@ const App: React.FC = () => {
         client.outputAudioTranscription = true;
 
         // From Python-server through WebSocket.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         client.onReceiveResponse = async (message: any) => {
             const msgType = message.type;
             const data = message.data;
@@ -469,6 +470,7 @@ const App: React.FC = () => {
                 logDebug("🛠️ Gemini is using a tool...");
                 const functionCalls = message.data?.functionCalls || [];
                 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 functionCalls.forEach((fc: any) => {
                    logDebug(`🛠️ Calling tool: ${fc.name} with arguments: ${JSON.stringify(fc.args)}`);
                    
@@ -497,7 +499,7 @@ const App: React.FC = () => {
             setAppState('STORYTELLING'); // Set to started when socket opens
         };
 
-        client.onErrorMessage = (err: any) => {
+        client.onErrorMessage = (err: unknown) => {
             logDebug(`🚨 WebSocket Error: ${JSON.stringify(err)}`);
             setConnectionStatus('Error');
             setAppState('ERROR');
@@ -561,7 +563,7 @@ const App: React.FC = () => {
         appendChat("SYSTEM", "[Mic ON]", "system");
         logDebug("Audio streaming started.");
         // liveClientRef.current?.sendTextMessage("[SYSTEM]: Mic turned ON.");
-      } catch (err: any) { logDebug("Audio error: " + err); }
+      } catch (err: unknown) { logDebug("Audio error: " + err); }
     } else {
       audioStreamerRef.current?.stop();
       setIsAudioOn(false);
@@ -590,7 +592,7 @@ const App: React.FC = () => {
         appendChat("SYSTEM", "[Camera ON]", "system");
         logDebug("Video streaming started.");
         liveClientRef.current?.sendTextMessage("[SYSTEM]: Mirror is now ON. You can SEE clearly.");
-      } catch (err: any) { logDebug("Video error: " + err); }
+      } catch (err: unknown) { logDebug("Video error: " + err); }
     } else {
       videoStreamerRef.current?.stop();
       setIsVideoOn(false);
