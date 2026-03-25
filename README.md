@@ -11,7 +11,7 @@
 ![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4?style=flat-square&logo=google)
 ![ADK](https://img.shields.io/badge/Framework-Google%20ADK-673AB7?style=flat-square&logo=google)
 ![Cloud](https://img.shields.io/badge/Hosted-Google%20Cloud-0F9D58?style=flat-square&logo=googlecloud)
-![Version](https://img.shields.io/badge/version-v2.0.0-orange?style=flat-square)
+![Version](https://img.shields.io/badge/version-v2.1.0-orange?style=flat-square)
 
 > **Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child.**
 
@@ -58,6 +58,22 @@ Gemini Tales offers two distinct ways to experience the magic:
 | **Visual Flow** | Interleaved watercolor illustrations. | Themed story-driven scenes. |
 
 > **Note on Agent Mode**: While the background agents (Researcher, Judge, Storysmith) are hard at work forming the perfect context, their direct technical scripts are kept "behind the scenes" to keep the child's interface clean and magical. Look forward to seeing their raw creative process in a future **Gemini Tales Premium** release!
+
+---
+
+## 🤸 Exercise Focus Modes
+
+To ensure children get the exact type of movement they need, Gemini Tales now features **Exercise Focus Modes**. The AI Narrator adapts its physical challenges dynamically based on your selection:
+
+<p align="center">
+  <img src="assets/exercise-focus.png" alt="Exercise Focus Selection" width="800">
+</p>
+
+| Focus | Mode | Description |
+|---|---|---|
+| ✨ **Sky Magic** | **Upper Body** | Exercises focused on arms and upper body (like flying, waving wands, reaching for the stars). |
+| 🌿 **Earth Magic**| **Lower Body** | Exercises focused on legs and lower body (like stomping, jumping, running, balancing). |
+| ☀️ **Solar Power**| **Full Body**  | Full body exercises. Energy and movement everywhere! |
 
 ---
 
