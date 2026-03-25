@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import type { AppState, Achievement, StoryMode } from './types';
+import type { AppState, Achievement, StoryMode, ExerciseMode } from './types';
 import { GeminiLiveAPI } from './utils/geminilive';
 import { AudioStreamer, VideoStreamer, AudioPlayer } from './utils/mediaUtils';
 import { INITIAL_ACHIEVEMENTS } from './config';
 import { ModeSelector } from './components/ModeSelector';
+import { ExerciseModeSelector } from './components/ExerciseModeSelector';
 import { useAgentStory } from './hooks/useAgentStory';
 
 // --- ENV VARIABLES ---
@@ -48,9 +49,9 @@ const App: React.FC = () => {
         }
         
         setIsConfigLoaded(true);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Config Load Error:', err);
-        setConfigError(err.message);
+        setConfigError(err instanceof Error ? err.message : String(err));
       }
     };
 
@@ -71,6 +72,7 @@ const App: React.FC = () => {
 
   // --- MODE STATE ---
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
+  const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('solar_power');
   const { fetchStory, storyText, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
 
   const [characterDescription, setCharacterDescription] = useState('a small woodland elf with translucent wings and a twig wand');
@@ -340,7 +342,7 @@ const App: React.FC = () => {
     try {
         const sessionId = Math.random().toString(36).substring(7);
         const baseUrl = PROXY_URL.split('/ws/proxy')[0]; 
-        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}?mode=${storyMode}`;
+        const adkUrl = `${baseUrl}/ws/puck_live/user1/${sessionId}?mode=${storyMode}&exercise_mode=${exerciseMode}`;
 
         // console.log("Starting connection to ADK:", adkUrl);
         logDebug(`Target URL: ${adkUrl}`);
@@ -769,6 +771,13 @@ const App: React.FC = () => {
               selected={storyMode}
               onChange={setStoryMode}
               disabled={connectionStatus === 'Connected' || isAgentLoading}
+            />
+
+            {/* Exercise Selector */}
+            <ExerciseModeSelector
+              selected={exerciseMode}
+              onChange={setExerciseMode}
+              disabled={connectionStatus === 'Connected'}
             />
 
             {/* Agent Mode: Loading / Ready state */}

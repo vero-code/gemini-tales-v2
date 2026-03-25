@@ -133,7 +133,8 @@ async def websocket_puck_endpoint(websocket: WebSocket, user_id: str, session_id
     
     # Get story mode from query params (default to live)
     story_mode = websocket.query_params.get("mode", "live")
-    logger.info(f"🔍 Puck Agent Connected: {user_id}/{session_id} (Mode: {story_mode})")
+    exercise_mode = websocket.query_params.get("exercise_mode", "solar_power")
+    logger.info(f"🔍 Puck Agent Connected: {user_id}/{session_id} (Mode: {story_mode}, Exercise: {exercise_mode})")
 
     # Determine instructions based on mode
     current_instruction = puck_agent.instruction
@@ -149,6 +150,16 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
         logger.info("🧠 Session instruction set to NARRATOR mode.")
     else:
         logger.info("🌿 Session instruction set to LIVE mode.")
+
+    exercise_append = ""
+    if exercise_mode == "sky_magic":
+        exercise_append = "\n\nEXERCISE FOCUS (Sky Magic): When asking the child to perform exercises or movements, focus ONLY on arms and upper body (like flying, waving wands, reaching for the stars)."
+    elif exercise_mode == "earth_magic":
+        exercise_append = "\n\nEXERCISE FOCUS (Earth Magic): When asking the child to perform exercises or movements, focus ONLY on legs and lower body (like stomping, jumping, running, balancing)."
+    else:
+        exercise_append = "\n\nEXERCISE FOCUS (Solar Power): When asking the child to perform exercises or movements, use full body movements."
+        
+    current_instruction += exercise_append
 
     # Create a session-local runner with the desired instruction
     # Use copy for shallow copy to avoid overriding global puck_agent but sharing tools

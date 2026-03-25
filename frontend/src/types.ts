@@ -22,3 +22,5 @@ export const AppState = {
 export type AppState = typeof AppState[keyof typeof AppState];
 
 export type StoryMode = 'live' | 'agent';
+
+export type ExerciseMode = 'sky_magic' | 'earth_magic' | 'solar_power';
