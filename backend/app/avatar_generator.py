@@ -44,12 +44,30 @@ class StoryAvatarGenerator:
             location=self.location
         )
 
-        # Create a chat session to maintain character consistency
+        # Initialize model and create separate chat sessions for different use cases
         image_model = os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview")
-        self.chat = self.client.chats.create(
+        
+        # Chat session for character portraits (1:1 aspect ratio)
+        self.chat_avatar = self.client.chats.create(
             model=image_model,
             config=types.GenerateContentConfig(
-                response_modalities=["TEXT", "IMAGE"]
+                response_modalities=["TEXT", "IMAGE"],
+                image_config=types.ImageConfig(
+                    aspect_ratio="1:1",
+                    image_size="1K"
+                )
+            )
+        )
+        
+        # Chat session for scene illustrations (16:9 aspect ratio)
+        self.chat_scene = self.client.chats.create(
+            model=image_model,
+            config=types.GenerateContentConfig(
+                response_modalities=["TEXT", "IMAGE"],
+                image_config=types.ImageConfig(
+                    aspect_ratio="16:9",
+                    image_size="2K"
+                )
             )
         )
         
@@ -85,7 +103,7 @@ The illustration should capture the mood of the story: {scene_description}"""
         retries = 3
         for i in range(retries):
             try:
-                response = self.chat.send_message(prompt)
+                response = self.chat_scene.send_message(prompt)
                 filename = f"scene_{uuid.uuid4().hex[:8]}.png"
                 scene_path = self._save_image_from_response(response, filename)
                 if scene_path:
@@ -125,7 +143,7 @@ CRITICAL STYLE REQUIREMENTS:
 The white background is essential for character compositing."""
 
         logger.info(f"🎨 Generating initial avatar for: {appearance_description}...")
-        response = self.chat.send_message(prompt)
+        response = self.chat_avatar.send_message(prompt)
         
         filename = f"portrait_{uuid.uuid4().hex[:8]}.png"
         portrait_path = self._save_image_from_response(response, filename)
@@ -168,7 +186,7 @@ The result should be clearly recognizable as THIS specific person, but illustrat
         logger.info("🎨 Transforming photo into a fairytale portrait...")
         
         # Send both the prompt AND the image
-        response = self.chat.send_message([
+        response = self.chat_avatar.send_message([
             prompt,
             types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg")
         ])
@@ -205,7 +223,7 @@ CRITICAL REQUIREMENTS:
 The character must be immediately recognizable as the same person from the portrait."""
 
         logger.info(f"🖼️ Generating consistent action: {action_description}...")
-        response = self.chat.send_message(prompt)
+        response = self.chat_avatar.send_message(prompt)
         
         filename = f"action_{uuid.uuid4().hex[:8]}.png"
         action_path = self._save_image_from_response(response, filename)
