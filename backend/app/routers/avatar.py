@@ -57,3 +57,16 @@ async def animate_avatar(request: AvatarRequest):
     path = await loop.run_in_executor(None, generator.generate_animated_puck, request.description)
     url_path = f"/avatars/{os.path.basename(path)}"
     return {"path": url_path}
+
+@router.post("/pose")
+async def avatar_pose(request: AvatarRequest):
+    """Generate the character in a different pose/angle (360-degree view).
+    
+    Uses the same chat session to maintain character consistency.
+    Description examples: "in profile looking right", "from behind", "three-quarter view"
+    """
+    generator = get_generator(request.user_id)
+    loop = asyncio.get_event_loop()
+    path = await loop.run_in_executor(None, generator.generate_avatar_pose, request.description)
+    url_path = f"/avatars/{os.path.basename(path)}"
+    return {"path": url_path}

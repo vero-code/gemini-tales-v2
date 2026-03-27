@@ -266,6 +266,54 @@ The character must be immediately recognizable as the same person from the portr
         logger.info(f"✓ Action image generated at {action_path}")
         return action_path
 
+    def generate_avatar_pose(self, pose_description: str) -> str:
+        """
+        Generates the same character in a different pose/angle (360-degree view support).
+        
+        Uses multi-turn chat to maintain CHARACTER CONSISTENCY across different angles and poses.
+        Each pose request adds to the same chat session, ensuring the model remembers the character
+        from previous illustrations and generates the same recognizable character from different angles.
+        
+        Supported poses include:
+        - "in profile looking right" / "in profile looking left"
+        - "looking over shoulder"
+        - "from behind"
+        - "three-quarter view"
+        - Or any custom pose description
+        
+        Based on: Character consistency 360 view from Nano Banana documentation.
+        
+        Args:
+            pose_description: Description of the pose/angle (e.g., "in profile looking right")
+            
+        Returns:
+            Path to the saved pose image (1K, square format).
+        """
+        prompt = f"""Create a studio portrait of this same character in a different pose.
+
+Pose: {pose_description}
+
+CRITICAL REQUIREMENTS:
+- EXACT SAME CHARACTER - same face, features, expression, magical elements
+- Maintain all distinctive characteristics from previous images
+- New angle/pose while showing recognizable personality
+- Background: Pure solid white (#FFFFFF)
+- Art style: EXACTLY the same watercolor, whimsical children's book style
+- Lighting: Soft, magical glow consistent with previous portraits
+
+The character must be IMMEDIATELY recognizable from any angle."""
+
+        logger.info(f"🎭 Generating character pose: {pose_description}...")
+        response = self.chat_avatar.send_message(prompt)
+        
+        filename = f"pose_{uuid.uuid4().hex[:8]}.png"
+        pose_path = self._save_image_from_response(response, filename)
+        if not pose_path:
+            raise Exception("Failed to generate pose image - no image in response")
+        
+        logger.info(f"✓ Character pose generated at {pose_path}")
+        return pose_path
+
     def generate_animated_puck(self, appearance_description: str) -> str:
         """
         Generates a 4-second video of Puck using Veo 3.1.
