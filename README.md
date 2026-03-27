@@ -47,13 +47,13 @@ Gemini Tales - Newer Demo:
 
 Gemini Tales offers two distinct ways to experience the magic:
 
-| Feature | 🎙️ Live Mode (Spontaneous) | 🤖 Agent Mode (Structured) |
-|---|---|---|
-| **Puck's Role** | **The Improviser**: Composes and narrates purely on the fly. | **The Narrator**: Brings a carefully crafted script to life. |
-| **Preparation** | No wait time. Jump straight into the action. | 30-60s "Story Crafting" context formation. |
-| **Backend Agents** | Idle. | **Active Background**: Researching and weaving the plot. |
-| **Technology** | Direct **Gemini Live 2.5 Flash** session. | **Orchestrator (3.1 Pro)** + **Live Narrator**. |
-| **Visual Flow** | Interleaved watercolor illustrations. | Themed story-driven scenes. |
+| Feature            | 🎙️ Live Mode (Spontaneous)                                   | 🤖 Agent Mode (Structured)                                   |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Puck's Role**    | **The Improviser**: Composes and narrates purely on the fly. | **The Narrator**: Brings a carefully crafted script to life. |
+| **Preparation**    | No wait time. Jump straight into the action.                 | 30-60s "Story Crafting" context formation.                   |
+| **Backend Agents** | Idle.                                                        | **Active Background**: Researching and weaving the plot.     |
+| **Technology**     | Direct **Gemini Live 2.5 Flash** session.                    | **Orchestrator (3.1 Pro)** + **Live Narrator**.              |
+| **Visual Flow**    | Interleaved watercolor illustrations.                        | Themed story-driven scenes.                                  |
 
 > **Note on Agent Mode**: While the background agents (Researcher, Judge, Storysmith) are hard at work forming the perfect context, their direct technical scripts are kept "behind the scenes" to keep the child's interface clean and magical. Look forward to seeing their raw creative process in a future **Gemini Tales Premium** release!
 
@@ -67,11 +67,11 @@ To ensure children get the exact type of movement they need, Gemini Tales now fe
   <img src="assets/exercise-focus.png" alt="Exercise Focus Selection" width="800">
 </p>
 
-| Focus | Mode | Description |
-|---|---|---|
-| ✨ **Sky Magic** | **Upper Body** | Exercises focused on arms and upper body (like flying, waving wands, reaching for the stars). |
-| 🌿 **Earth Magic**| **Lower Body** | Exercises focused on legs and lower body (like stomping, jumping, running, balancing). |
-| ☀️ **Solar Power**| **Full Body**  | Full body exercises. Energy and movement everywhere! |
+| Focus              | Mode           | Description                                                                                   |
+| ------------------ | -------------- | --------------------------------------------------------------------------------------------- |
+| ✨ **Sky Magic**   | **Upper Body** | Exercises focused on arms and upper body (like flying, waving wands, reaching for the stars). |
+| 🌿 **Earth Magic** | **Lower Body** | Exercises focused on legs and lower body (like stomping, jumping, running, balancing).        |
+| ☀️ **Solar Power** | **Full Body**  | Full body exercises. Energy and movement everywhere!                                          |
 
 ---
 
@@ -87,7 +87,7 @@ To ensure children get the exact type of movement they need, Gemini Tales now fe
 ```mermaid
 graph TD
     User([User]) <--> Browser["Browser (Magic Mirror UI)"]
-    
+
     subgraph "Main Interaction Agent (Puck)"
         Browser <-->|WebSocket| Puck["Puck (Live Narrator)"]
         subgraph "Puck's Toolbox"
@@ -97,20 +97,20 @@ graph TD
         Puck <--> Illustrator
         Puck <--> Awards
     end
-    
+
     subgraph "Google AI Infrastructure"
         Puck <-->|Multimodal Flow| GeminiLive[Gemini Live 2.5 Flash]
         Illustrator -->|Video Generation| Veo[Veo 3.1]
         Illustrator -->|Dynamic Rendering| FlashImage[Gemini 2.5 Flash-Image]
     end
-    
+
     subgraph "Supporting Brain (Agent Mode)"
         Puck -->|Request Pipeline| Orchestrator[Orchestrator]
         Orchestrator <-->|A2A| Researcher[Researcher]
         Orchestrator <-->|A2A| Judge[Judge]
         Orchestrator <-->|A2A| Storysmith[Storysmith]
     end
-    
+
     style Browser fill:#f9f,stroke:#333,stroke-width:2px
     style Puck fill:#f9f,stroke:#333,stroke-width:2px
     style Orchestrator fill:#ccf,stroke:#333,stroke-width:2px
@@ -118,6 +118,16 @@ graph TD
 ```
 
 > 📖 **Deep Dive**: For a detailed look at system design, data flows, and design decisions, see the [**Full Architecture Documentation**](ARCHITECTURE.md).
+
+#### ADK Trace Example
+
+When using **Agent Mode**, the Google Agent Development Kit provides detailed tracing of all agent invocations, timing, and dependencies:
+
+<p align="center">
+  <img src="assets/adk-web-trace.png" alt="ADK Web Trace - Agent Pipeline Visualization" width="800">
+</p>
+
+This trace shows the complete flow: **Puck** → **Orchestrator** → **Researcher** → **Judge** → **Storysmith** → **Content Builder**, with detailed timing for each step.
 
 ---
 
@@ -136,34 +146,47 @@ graph TD
 Upgraded to **[Gemini 3.1 Flash-Image Preview (Nano Banana 2)](https://ai.google.dev/gemini-api/docs/models/gemini)** with three powerful improvements:
 
 ### 1. 🎨 High-Fidelity Photo Transformation
+
 Transform any photo into a magical fairytale character while maintaining perfect recognizability.
+
 - **Smart Detail Preservation**: Automatically preserves facial structure, eye color, distinctive features, hair color/style, and natural expression.
 - **Quality Guarantee**: Person remains **immediately recognizable** while being stunningly illustrated.
 - **How It Works**: Upload a photo → Gemini transforms it into a watercolor fairytale portrait with magical elements while keeping the person's key features intact.
 - **Technical**: Multi-turn chat preserves context for consistent character refinement.
 
 ### 2. 🔍 Google Search Grounding for Scenes
+
 Scene illustrations now use real-world information for enhanced accuracy and realism.
+
 - **Accurate Locations**: Mention specific places (e.g., "the Amazon rainforest") and Gemini automatically grounds the visual details in real geography.
 - **Rich Details**: Accurate plants, animals, landmarks, and environmental features based on actual locations.
 - **Magical Realism**: Maintains whimsical fairytale style while depicting real-world accuracy.
 - **Technical**: Google Search tool integrated into scene generation chat session for live data fetching.
 
 ### 3. 🔄 Character 360° View (Different Poses)
+
 See your character from multiple angles while maintaining perfect consistency.
+
 - **4 Interactive Views**: Profile Right → Profile Left → From Behind → Bird's Eye (three-quarter from above).
 - **Perfect Consistency**: Uses multi-turn chat memory to ensure the same character across all poses.
 - **Easy to Use**: One-click buttons in the "360° View" section to rotate your character.
 - **Technical**: Same `chat_avatar` session maintains character memory across multiple pose generations.
 
+<p align="center">
+  <img src="assets/360_view.png" alt="360 View Character Angles Interface" width="500">
+</p>
+
 ### Configuration
+
 Model names are now externalized to environment variables for easy customization:
+
 ```env
 VITE_MODEL_ID_IMAGE=gemini-3.1-flash-image-preview
 VIDEO_MODEL_ID=veo-3.1-generate-preview
 ```
 
 Separate chat sessions optimize image quality:
+
 - **Avatar Session (1:1, 1K resolution)**: Character portraits and poses.
 - **Scene Session (16:9, 2K resolution, with Google Search)**: Story illustrations.
 
@@ -183,7 +206,7 @@ The "Magic Mirror" cockpit provides full transparency and control over the AI ex
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS.
-- **AI Models**: 
+- **AI Models**:
   - **Gemini Live 2.5 Flash** (Real-time Audio/Vision)
   - **Gemini 3.1 Pro & Flash-Lite** (Agentic Reasoning)
   - **Gemini 3.1 Flash-Image Preview (Nano Banana 2)** (High-fidelity avatars & scenes with Google Search grounding)
@@ -198,6 +221,7 @@ The "Magic Mirror" cockpit provides full transparency and control over the AI ex
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
+
 - Python 3.10+ and `uv` installed.
 - Node.js 18+ and `npm`.
 - Google Cloud Project with Gemini API access.
@@ -207,21 +231,26 @@ The "Magic Mirror" cockpit provides full transparency and control over the AI ex
 To run the full experience locally, start these components in separate terminals:
 
 **A. Start ADK Agents (The Brain)**
+
 ```powershell
 cd backend/agents
 .\run_local.ps1
 ```
-*This starts the sub-agents on ports 8001–8004 required for Agent Mode.*
+
+_This starts the sub-agents on ports 8001–8004 required for Agent Mode._
 
 **B. Start Main Agent (Puck)**
+
 ```bash
 cd backend
 uv sync
 uv run python app/main.py
 ```
-*Starts Puck, the Live Narrator, ready to see and hear you (Port 8000).*
+
+_Starts Puck, the Live Narrator, ready to see and hear you (Port 8000)._
 
 **C. Start Frontend UI**
+
 ```bash
 cd frontend
 npm install
@@ -233,25 +262,32 @@ npm run dev
 To ensure this project is **fully reproducible**, I've included automation scripts that handle the complex deployment of my multi-agent architecture to **Google Cloud Run**.
 
 #### A. Prerequisites for Cloud
+
 - [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated (`gcloud auth login`).
 - An active Google Cloud Project with Billing enabled.
 - Your `.env` file in `backend/app/` should contain your `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`.
 
 #### B. Deploy Supporting Agents (The Brain)
+
 These agents (Researcher, Judge, Storysmith, Orchestrator) provide the agentic reasoning for the story mode.
+
 ```powershell
 cd backend/agents
 .\deploy.ps1
 ```
-*This script automatically bundles shared logic, configures security, and deploys 4 microservices to Cloud Run.*
+
+_This script automatically bundles shared logic, configures security, and deploys 4 microservices to Cloud Run._
 
 #### C. Deploy Main App (Puck + Frontend)
+
 This deploys the central "Magic Mirror" interface and the Live Narrator.
+
 ```powershell
 # Run from the repository root
 .\deploy_app.ps1
 ```
-*This script handles the dual-stage build: compiling the React 19 frontend and wrapping it with the FastAPI/Puck bridge into a single production-ready container.*
+
+_This script handles the dual-stage build: compiling the React 19 frontend and wrapping it with the FastAPI/Puck bridge into a single production-ready container._
 
 > 💡 **Pro-Tip**: After deployment, you can manage all AI parameters (Model IDs, API Keys) directly through the Cloud Run environment variables without needing to re-deploy.
 
@@ -262,6 +298,7 @@ This deploys the central "Magic Mirror" interface and the Live Narrator.
 Follow these steps to ensure a magical and stable session:
 
 ### 1. The Character Workshop
+
 - **Customize Puck**: Enter a description for your character or upload a photo to create a personalized fairytale avatar.
   - 📸 **Photo Upload**: Transform any photo into a magical fairytale character using **High-Fidelity detail preservation** — the person remains instantly recognizable while becoming beautifully illustrated.
 - **Bring Him to Life**: Once Puck is generated, click the **Animate** button to see him start moving! (Powered by **Veo 3.1**).
@@ -275,10 +312,12 @@ Follow these steps to ensure a magical and stable session:
 - **Choose Your Journey**: Select **Live Mode** for spontaneous play or **Agent Mode** for a structured, multi-agent story.
 
 ### 2. Ignition
+
 - **Live Mode**: Click **Connect API** to establish a direct link with Gemini.
 - **Agent Mode**: Click **🚀 Generate Story with Agents** to begin the story crafting process.
 
 ### 3. Magical Interaction
+
 - **Listen & Act**: Follow the spoken instructions from Puck.
 - **Watch the Magic**: As you journey through the tale, Puck will automatically generate beautiful illustrations for every new scene using **Google Search grounding** — real locations and elements are accurately depicted while maintaining a whimsical fairytale style.
 - **Earn Badges**: Successfully complete physical tasks to unlock **Achievements** and see your badge collection grow!
@@ -287,6 +326,7 @@ Follow these steps to ensure a magical and stable session:
 - **Chat Fallback**: If you're in a quiet place, you can also type messages directly into the **Chat Hub**.
 
 ### 4. Troubleshooting
+
 - **No Sound/Image?**: Ensure the correct device is selected in the **Microphone** and **Camera** dropdowns before clicking "Start".
 - **Connection**: Check the **Debug Console** to verify that the WebSocket status is "Connected".
 
@@ -305,4 +345,4 @@ Check out the full story of how I built an "AI Nanny" to fight the sedentary lif
 
 MIT — see [LICENSE](LICENSE).
 
-*Created with ❤️ for the next generation of explorers by [Veronika Kashtanova](https://x.com/veron_code)*
+_Created with ❤️ for the next generation of explorers by [Veronika Kashtanova](https://x.com/veron_code)_
