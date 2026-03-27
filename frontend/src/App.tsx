@@ -78,9 +78,11 @@ const App: React.FC = () => {
   const [characterDescription, setCharacterDescription] = useState('a small woodland elf with translucent wings and a twig wand');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [actionUrl, setActionUrl] = useState<string | null>(null);
+  const [poseUrl, setPoseUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [isGeneratingAction, setIsGeneratingAction] = useState(false);
+  const [isGeneratingPose, setIsGeneratingPose] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
 
   // --- DEV PANEL STATE ---
@@ -298,6 +300,32 @@ const App: React.FC = () => {
       logDebug("Failed to generate action: " + err);
     } finally {
       setIsGeneratingAction(false);
+    }
+  };
+
+  const handleGeneratePose = async (pose: string) => {
+    setIsGeneratingPose(true);
+    setPoseUrl(null);
+    logDebug(`🎭 Rotating Puck to view: ${pose}...`);
+    try {
+      const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      const response = await fetch(`${backendUrl}/api/avatar/pose`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: pose })
+      });
+      const data = await response.json();
+      if (data.path) {
+        const fullPath = backendUrl + data.path;
+        setPoseUrl(fullPath);
+        // Also set as current illustration
+        setCurrentIllustration(fullPath);
+        logDebug("✓ Puck rotated!");
+      }
+    } catch (err) {
+      logDebug("Failed to generate pose: " + err);
+    } finally {
+      setIsGeneratingPose(false);
     }
   };
 
@@ -923,7 +951,7 @@ const App: React.FC = () => {
                     {avatarUrl && (
                         <div className="pt-4 border-t border-purple-100 animate-in slide-in-from-top-4">
                             <div className="mb-4 rounded-2xl overflow-hidden border-2 border-purple-200 shadow-sm aspect-square bg-white">
-                                <img src={actionUrl || avatarUrl || undefined} alt="Avatar Preview" className="w-full h-full object-cover" />
+                                <img src={poseUrl || actionUrl || avatarUrl || undefined} alt="Avatar Preview" className="w-full h-full object-cover" />
                             </div>
                             <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintaining Puck's look)</label>
                             <div className="flex gap-2">
@@ -942,6 +970,37 @@ const App: React.FC = () => {
                                     🏃 Run in Field
                                 </button>
                             </div>
+                            <label className="text-xs font-bold text-purple-600 uppercase mb-2 block mt-3">360° View (Character Angles)</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button 
+                                    onClick={() => handleGeneratePose("in profile looking right")}
+                                    disabled={isGeneratingPose}
+                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
+                                >
+                                    👈 Profile Right
+                                </button>
+                                <button 
+                                    onClick={() => handleGeneratePose("in profile looking left")}
+                                    disabled={isGeneratingPose}
+                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
+                                >
+                                    👉 Profile Left
+                                </button>
+                                <button 
+                                    onClick={() => handleGeneratePose("from behind, looking over the shoulder")}
+                                    disabled={isGeneratingPose}
+                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
+                                >
+                                    🔄 From Behind
+                                </button>
+                                <button 
+                                    onClick={() => handleGeneratePose("three-quarter view from above")}
+                                    disabled={isGeneratingPose}
+                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
+                                >
+                                    ⬆️ Bird's Eye
+                                </button>
+                            </div>
                             <button 
                                 onClick={handleAnimatePuck}
                                 disabled={isGeneratingVideo}
@@ -954,8 +1013,8 @@ const App: React.FC = () => {
                                     </span>
                                 ) : "✨ Bring Puck to Life (Animate Video)"}
                             </button>
-                            {isGeneratingAction && (
-                                <p className="text-[10px] text-purple-500 mt-2 text-center animate-pulse">Gemini is rendering the action...</p>
+                            {(isGeneratingAction || isGeneratingPose) && (
+                                <p className="text-[10px] text-purple-500 mt-2 text-center animate-pulse">Gemini is rendering...</p>
                             )}
                         </div>
                     )}
