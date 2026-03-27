@@ -59,7 +59,7 @@ class StoryAvatarGenerator:
             )
         )
         
-        # Chat session for scene illustrations (16:9 aspect ratio)
+        # Chat session for scene illustrations (16:9 aspect ratio) with Google Search grounding
         self.chat_scene = self.client.chats.create(
             model=image_model,
             config=types.GenerateContentConfig(
@@ -67,7 +67,8 @@ class StoryAvatarGenerator:
                 image_config=types.ImageConfig(
                     aspect_ratio="16:9",
                     image_size="2K"
-                )
+                ),
+                tools=[{"google_search": {}}]
             )
         )
         
@@ -76,26 +77,41 @@ class StoryAvatarGenerator:
 
     def generate_scene_illustration(self, scene_description: str) -> str:
         """
-        Generates a full scene illustration for the story.
+        Generates a full scene illustration for the story with grounding in real-world information.
+        
+        Uses Google Search to enhance accuracy when depicting real locations, animals, plants,
+        or historical elements. Scene descriptions mentioning specific places (e.g., "the Amazon rainforest")
+        will be enhanced with accurate visual details.
+        
+        Based on: Grounding with Google Search from Nano Banana documentation.
         
         Args:
             scene_description: Text description of the scene to illustrate.
             
         Returns:
-            Path to the saved scene image.
+            Path to the saved scene image (2K resolution, 16:9 aspect ratio).
         """
         prompt = f"""Create a magical fairytale scene illustration.
         
-        Scene description: {scene_description}
+Scene description: {scene_description}
+
+GROUNDING INSTRUCTION:
+If the scene mentions specific real-world locations, landmarks, plants, animals, or geographic features,
+use Google Search to ensure accurate visual details while maintaining the magical fairytale style.
 
 CRITICAL STYLE REQUIREMENTS:
 - Art style: Watercolor, whimsical children's book illustration
-- Soft textures, gentle brushstrokes, and a warm color palette
-- Composition: Full landscape scene
-- Lighting: Magical, atmospheric lighting
-- Feel: Enchanting and safe for children
+- Soft textures, gentle brushstrokes, and a warm, magical color palette
+- Composition: Full landscape scene with atmospheric depth
+- Lighting: Magical, atmospheric lighting with enchanting glows
+- Feel: Enchanting and safe for children - no dark or scary elements
+- Details: Rich environmental details while maintaining whimsical charm
 
-The illustration should capture the mood of the story: {scene_description}"""
+The illustration should:
+1. Accurately depict any real locations/elements mentioned
+2. Maintain magical fairytale atmosphere
+3. Be visually engaging for children aged 4-12
+4. Capture the narrative mood: {scene_description}"""
 
         logger.info(f"🎨 Generating scene illustration: {scene_description}...")
         
