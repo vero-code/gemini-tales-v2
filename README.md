@@ -1,19 +1,17 @@
-# ✨ Gemini Talesv2: The Evolution
+# ✨ Gemini Tales v2: The Evolution
 
 **This is the development repository for Gemini Tales post-hackathon.**
 
 > [!IMPORTANT]
 > **Stable Contest Version:** If you are a judge or looking for the original hackathon submission (frozen as of March 16, 2026), please visit the [Original Gemini Tales Repository](https://github.com/vero-code/gemini-tales).
 
-> **The story that doesn't move until you do.**
-
 ![Status](https://img.shields.io/badge/status-MVP-brightgreen?style=flat-square)
 ![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4?style=flat-square&logo=google)
 ![ADK](https://img.shields.io/badge/Framework-Google%20ADK-673AB7?style=flat-square&logo=google)
 ![Cloud](https://img.shields.io/badge/Hosted-Google%20Cloud-0F9D58?style=flat-square&logo=googlecloud)
-![Version](https://img.shields.io/badge/version-v2.1.0-orange?style=flat-square)
+![Version](https://img.shields.io/badge/version-v2.2.0-orange?style=flat-square)
 
-> **Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child.**
+_Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child. The story that doesn't move until you do._
 
 Gemini Tales is an interactive fairytale book and a **Creative Storyteller ✍️** that **breaks the traditional "text box" paradigm**. It transforms screen time into an active adventure by creating a **seamless** experience where AI doesn't just process text—it sees, hears, and moves with the child.
 
@@ -133,6 +131,44 @@ graph TD
 
 ---
 
+## 🍌 Nano Banana 2 Enhancements
+
+Upgraded to **[Gemini 3.1 Flash-Image Preview (Nano Banana 2)](https://ai.google.dev/gemini-api/docs/models/gemini)** with three powerful improvements:
+
+### 1. 🎨 High-Fidelity Photo Transformation
+Transform any photo into a magical fairytale character while maintaining perfect recognizability.
+- **Smart Detail Preservation**: Automatically preserves facial structure, eye color, distinctive features, hair color/style, and natural expression.
+- **Quality Guarantee**: Person remains **immediately recognizable** while being stunningly illustrated.
+- **How It Works**: Upload a photo → Gemini transforms it into a watercolor fairytale portrait with magical elements while keeping the person's key features intact.
+- **Technical**: Multi-turn chat preserves context for consistent character refinement.
+
+### 2. 🔍 Google Search Grounding for Scenes
+Scene illustrations now use real-world information for enhanced accuracy and realism.
+- **Accurate Locations**: Mention specific places (e.g., "the Amazon rainforest") and Gemini automatically grounds the visual details in real geography.
+- **Rich Details**: Accurate plants, animals, landmarks, and environmental features based on actual locations.
+- **Magical Realism**: Maintains whimsical fairytale style while depicting real-world accuracy.
+- **Technical**: Google Search tool integrated into scene generation chat session for live data fetching.
+
+### 3. 🔄 Character 360° View (Different Poses)
+See your character from multiple angles while maintaining perfect consistency.
+- **4 Interactive Views**: Profile Right → Profile Left → From Behind → Bird's Eye (three-quarter from above).
+- **Perfect Consistency**: Uses multi-turn chat memory to ensure the same character across all poses.
+- **Easy to Use**: One-click buttons in the "360° View" section to rotate your character.
+- **Technical**: Same `chat_avatar` session maintains character memory across multiple pose generations.
+
+### Configuration
+Model names are now externalized to environment variables for easy customization:
+```env
+VITE_MODEL_ID_IMAGE=gemini-3.1-flash-image-preview
+VIDEO_MODEL_ID=veo-3.1-generate-preview
+```
+
+Separate chat sessions optimize image quality:
+- **Avatar Session (1:1, 1K resolution)**: Character portraits and poses.
+- **Scene Session (16:9, 2K resolution, with Google Search)**: Story illustrations.
+
+---
+
 ## 🕹️ Interactive Control Center
 
 The "Magic Mirror" cockpit provides full transparency and control over the AI experience:
@@ -150,10 +186,12 @@ The "Magic Mirror" cockpit provides full transparency and control over the AI ex
 - **AI Models**: 
   - **Gemini Live 2.5 Flash** (Real-time Audio/Vision)
   - **Gemini 3.1 Pro & Flash-Lite** (Agentic Reasoning)
+  - **Gemini 3.1 Flash-Image Preview (Nano Banana 2)** (High-fidelity avatars & scenes with Google Search grounding)
   - **Veo 3.1** (Cinematic Video Generation)
-  - **Gemini 2.5 Flash-Image** (Character Avatars)
 - **Backend**: FastAPI, Google ADK, WebSockets.
 - **Hosting**: Google Cloud Run, Cloud Artifact Registry.
+- **Image Processing**: PIL (Python Imaging Library) for avatar manipulation.
+- **Google Cloud Services**: Vertex AI, Google AI API, Generative AI Client Library.
 
 ---
 
@@ -225,7 +263,15 @@ Follow these steps to ensure a magical and stable session:
 
 ### 1. The Character Workshop
 - **Customize Puck**: Enter a description for your character or upload a photo to create a personalized fairytale avatar.
+  - 📸 **Photo Upload**: Transform any photo into a magical fairytale character using **High-Fidelity detail preservation** — the person remains instantly recognizable while becoming beautifully illustrated.
 - **Bring Him to Life**: Once Puck is generated, click the **Animate** button to see him start moving! (Powered by **Veo 3.1**).
+- **Action Poses**: Generate Puck performing actions ("🪄 Cast Magic", "🏃 Run in Field") to show him in dynamic moments.
+- **360° View**: Rotate your character to see him from different angles:
+  - **👈 Profile Right** — View from the side looking right
+  - **👉 Profile Left** — View from the side looking left
+  - **🔄 From Behind** — View from behind looking over shoulder
+  - **⬆️ Bird's Eye** — Three-quarter view from above
+  - Each pose maintains perfect character consistency using multi-turn chat memory.
 - **Choose Your Journey**: Select **Live Mode** for spontaneous play or **Agent Mode** for a structured, multi-agent story.
 
 ### 2. Ignition
@@ -234,7 +280,7 @@ Follow these steps to ensure a magical and stable session:
 
 ### 3. Magical Interaction
 - **Listen & Act**: Follow the spoken instructions from Puck.
-- **Watch the Magic**: As you journey through the tale, Puck will automatically generate beautiful illustrations for every new scene.
+- **Watch the Magic**: As you journey through the tale, Puck will automatically generate beautiful illustrations for every new scene using **Google Search grounding** — real locations and elements are accurately depicted while maintaining a whimsical fairytale style.
 - **Earn Badges**: Successfully complete physical tasks to unlock **Achievements** and see your badge collection grow!
 - **Voice Response**: Select your **Microphone** and click **Start Audio** to talk to the mirror.
 - **Vision Recognition**: Select your **Camera** and click **Start Video** to show your face and the "Magic Sign".
