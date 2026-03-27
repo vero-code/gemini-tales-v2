@@ -155,33 +155,50 @@ The white background is essential for character compositing."""
 
     def generate_avatar_from_photo(self, photo_bytes: bytes, appearance_description: str) -> str:
         """
-        Transforms a real photo into a stylized fairytale portrait.
+        Transforms a real photo into a stylized fairytale portrait using HIGH-FIDELITY detail preservation.
+        
+        This method uses multi-turn chat to ensure the person remains IMMEDIATELY RECOGNIZABLE
+        while being transformed into a magical fairytale character. The model preserves:
+        - Facial structure (face shape, cheekbones, jawline)
+        - Distinctive features (eye shape/color, nose, scars, freckles)
+        - Hair color, style, and texture
+        - Natural expression and personality
+        - Any glasses, accessories, or unique characteristics
+        
+        Based on: High-fidelity detail preservation from Nano Banana documentation.
         
         Args:
             photo_bytes: The raw bytes of the user's photo.
             appearance_description: Text context (e.g., name or color preferences).
             
         Returns:
-            Path to the saved stylized portrait.
+            Path to the saved stylized portrait (1K, square format).
         """
         prompt = f"""Transform the person in this photo into Puck, a stylized fairytale narrator portrait.
 
 Character details: {appearance_description}
 
-PRESERVE from the original photo:
-- The person's facial features, face shape, and likeness
-- Their general expression and personality
-- Any distinctive features (glasses, etc.)
+HIGH-FIDELITY DETAIL PRESERVATION (CRITICAL):
+PRESERVE EXACTLY from the original photo:
+- **Face shape and structure**: jawline, cheekbones, forehead shape - these MUST remain accurately recognizable
+- **Distinctive facial features**: eye shape, eye color, eyebrow shape and color, nose shape
+- **Unique characteristics**: any scars, freckles, dimples, wrinkles, or birthmarks
+- **Hair**: color, texture, length, and style - maintain recognizable hairstyle
+- **Facial hair**: facial hair patterns if present
+- **Expression**: the natural expression and personality visible in the photo
+- **Accessories**: glasses, earrings, or other visible features
 
-TRANSFORM with this style:
-- Art style: Watercolor, whimsical children's book illustration
-- Soft textures, gentle brushstrokes, and a warm color palette
-- Background: Pure solid white (#FFFFFF) - absolutely no gradients or patterns
+The illustration MUST be immediately recognizable as THIS specific person.
+
+TRANSFORM with style:
+- Art style: Watercolor, whimsical children's book illustration (Pixar/Dreamworks level)
+- Soft textures, gentle brushstrokes, and a warm magical color palette
+- Background: Pure solid white (#FFFFFF) - no gradients or patterns
 - Frame: Head and shoulders, 3/4 view
-- Lighting: Soft, magical glow
-- Art style: Modern animated movie character (Pixar/Dreamworks aesthetic)
+- Lighting: Soft, magical glow, no harsh shadows
+- Add magical elements: slight sparkle, ethereal quality, fairytale aura
 
-The result should be clearly recognizable as THIS specific person, but illustrated as a magical fairytale character."""
+QUALITY CHECK: Person must be CLEARLY recognizable while being stunningly illustrated."""
 
         logger.info("🎨 Transforming photo into a fairytale portrait...")
         
