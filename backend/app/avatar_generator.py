@@ -45,8 +45,9 @@ class StoryAvatarGenerator:
         )
 
         # Create a chat session to maintain character consistency
+        image_model = os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview")
         self.chat = self.client.chats.create(
-            model="gemini-2.5-flash-image",
+            model=image_model,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"]
             )
@@ -226,8 +227,9 @@ The character must be immediately recognizable as the same person from the portr
 
         logger.info(f"🌿 Animating Puck with Veo 3.1: {appearance_description}...")
         
+        video_model = os.getenv("VIDEO_MODEL_ID", "veo-3.1-generate-preview")
         operation = self.client.models.generate_videos(
-            model="veo-3.1-generate-preview",
+            model=video_model,
             prompt=prompt,
             config=types.GenerateVideosConfig(
                 aspect_ratio="16:9",
