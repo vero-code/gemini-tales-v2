@@ -3,9 +3,10 @@ import io
 import json
 import uuid
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 from google import genai
 from google.genai import types
+from .services.music_generator import MusicGenerator
 import time
 from PIL import Image
 from dotenv import load_dotenv
@@ -74,6 +75,9 @@ class StoryAvatarGenerator:
         
         self.output_dir = os.path.join(os.path.dirname(__file__), "temp_avatars")
         os.makedirs(self.output_dir, exist_ok=True)
+        
+        # Initialize music generator
+        self.music_gen = MusicGenerator(project_id=self.project_id, location=self.location)
 
     def generate_scene_illustration(self, scene_description: str) -> str:
         """
@@ -89,7 +93,7 @@ class StoryAvatarGenerator:
             scene_description: Text description of the scene to illustrate.
             
         Returns:
-            Path to the saved scene image (2K resolution, 16:9 aspect ratio).
+            Tuple containing (image_filename, music_filename).
         """
         prompt = f"""Create a magical fairytale scene illustration.
         
@@ -133,6 +137,23 @@ The illustration should:
                 else:
                     logger.error(f"❌ Failed to generate scene illustration: {e}")
                     raise e
+        return "", ""
+
+    def generate_full_scene(self, scene_description: str) -> Tuple[str, str]:
+        """
+        New composite method that generates both illustration and matching background music.
+        """
+        # 1. Generate Image
+        img_path = self.generate_scene_illustration(scene_description)
+        if not img_path:
+            return "", ""
+        
+        img_filename = os.path.basename(img_path)
+        
+        # 2. Generate matching music using Lyria 3 (multimodal: looks at the image!)
+        music_filename = self.music_gen.generate_scene_music(scene_description, img_path)
+        
+        return img_filename, music_filename
 
     def generate_initial_avatar(self, appearance_description: str) -> str:
         """

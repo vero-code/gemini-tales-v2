@@ -1,6 +1,7 @@
 export interface StoryScene {
   text: string;
   imageUrl: string | null;
+  musicUrl?: string | null;
 }
 
 export interface Achievement {

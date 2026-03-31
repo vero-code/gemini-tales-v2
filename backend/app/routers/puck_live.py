@@ -168,15 +168,17 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
     local_runner = Runner(app_name="puck_adventure", agent=local_puck, session_service=session_service)
 
 
-    async def send_illustration(url: str):
-        # ... (rest of the code remains same)
-
+    async def send_illustration(url: str, music_url: str = None):
         try:
-            # logger.info(f"🎨 [WebSocket] Pushing illustration DIRECTLY to frontend: {url}")
-            await websocket.send_text(json.dumps({
+            # logger.info(f"🎨 [WebSocket] Pushing illustration and music: {url}, {music_url}")
+            payload = {
                 "type": "ILLUSTRATION", 
-                "data": {"url": url}
-            }))
+                "data": {
+                    "url": url,
+                    "musicUrl": music_url
+                }
+            }
+            await websocket.send_text(json.dumps(payload))
         except Exception as e:
             logger.error(f"Error sending illustration via websocket: {e}")
             

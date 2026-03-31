@@ -22,21 +22,21 @@ badge_callbacks = []
 async def _generate_and_dispatch(scene_description: str):
     generator = get_generator()
     try:
-        # Use to_thread to prevent blocking the main event loop while generating images
-        path = await asyncio.to_thread(generator.generate_scene_illustration, scene_description)
-        filename = os.path.basename(path)
-        url = f"/avatars/{filename}"
-        # logger.info(f"✅ Illustration generated and available at: {url}")
+        # Use to_thread to generate both image and music clip (multimodal)
+        img_fn, music_fn = await asyncio.to_thread(generator.generate_full_scene, scene_description)
+        
+        img_url = f"/avatars/{img_fn}"
+        music_url = f"/avatars/{music_fn}" if music_fn else None
         
         # Dispatch to any active websockets
         for cb in illustration_callbacks:
             try:
                 # Add to event loop without waiting
-                asyncio.create_task(cb(url))
+                asyncio.create_task(cb(img_url, music_url))
             except Exception as e:
                 logger.error(f"Error calling illustration callback: {e}")
     except Exception as e:
-        logger.error(f"❌ Failed to generate illustration: {e}")
+        logger.error(f"❌ Failed to generate multimodal scene: {e}")
 
 async def draw_story_scene(scene_description: str) -> str:
     """

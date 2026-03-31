@@ -84,6 +84,9 @@ const App: React.FC = () => {
   const [isGeneratingAction, setIsGeneratingAction] = useState(false);
   const [isGeneratingPose, setIsGeneratingPose] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  
+  // --- LYRIA MUSIC STATE ---
+  const [backgroundMusicUrl, setBackgroundMusicUrl] = useState<string | null>(null);
 
   // --- DEV PANEL STATE ---
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
@@ -519,6 +522,12 @@ const App: React.FC = () => {
                 setVideoUrl(null);
                 setCurrentIllustration(fullUrl);
                 setAppState('STORYTELLING'); // Ensure we are out of IDLE/LOADING
+                
+                if (message.data.musicUrl) {
+                  const fullMusicUrl = message.data.musicUrl.startsWith('http') ? message.data.musicUrl : backendUrl + message.data.musicUrl;
+                  logDebug(`🎵 Playing custom background music: ${fullMusicUrl}`);
+                  setBackgroundMusicUrl(fullMusicUrl);
+                }
             }
         };
 
@@ -575,6 +584,7 @@ const App: React.FC = () => {
     setAccumulatedStory([]);
     setAiTranscription('');
     resetAgentStory();
+    setBackgroundMusicUrl(null);
     logDebug("Disconnected from Gemini.");
 
     if (storyDebounceRef.current) clearTimeout(storyDebounceRef.current);
@@ -640,6 +650,17 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2] font-sans">
+      
+      {/* --- BACKGROUND MUSIC (LYRIA 3) --- */}
+      {backgroundMusicUrl && (
+        <audio 
+          src={backgroundMusicUrl} 
+          autoPlay 
+          loop 
+          className="hidden" 
+          ref={(el) => { if (el) el.volume = 0.4; }} 
+        />
+      )}
       
       {/* --- CONFIG LOADING STATE --- */}
       {!isConfigLoaded && !configError && (
