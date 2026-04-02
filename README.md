@@ -65,7 +65,7 @@ Gemini Tales offers two distinct ways to experience the magic:
 To ensure children get the exact type of movement they need, Gemini Tales now features **Exercise Focus Modes**. The AI Narrator adapts its physical challenges dynamically based on your selection:
 
 <p align="center">
-  <img src="assets/exercise-focus.png" alt="Exercise Focus Selection" width="800">
+  <img src="assets/exercise-focus.png" alt="Exercise Focus Selection">
 </p>
 
 | Focus              | Mode           | Description                                                                                   |
@@ -84,10 +84,6 @@ Gemini Tales v2 now features a real-time **Heroic Energy Tracker** (Phase 1 Move
 - **Heroic Energy Meter**: A 0-100% progress bar that "charges up" with every jumping jack, bunny hop, or arm wave.
 - **Interactive "Glow"**: The screen flashes with golden energy and showing `+15 Energy!` whenever a movement is successfully recorded.
 - **Educator Adoption Ready**: These metrics provide the raw data needed to prove the "screen time → move time" transformation.
-
-<p align="center">
-  <img src="assets/heroic-energy-preview.png" alt="Heroic Energy Dashboard Preview" width="400">
-</p>
 
 ---
 
