@@ -25,9 +25,9 @@ Gemini Tales is an integrated AI storytelling system built on the Google Agent D
 | Component | Responsibility | Primary Technology |
 |---|---|---|
 | **Frontend** | "Magic Mirror" UI — Real-time interaction & media | React 19 / Vite / Tailwind |
-| **Main Agent (Puck)** | Live Narrator — Handles voice, vision, and interleaved media | Python / FastAPI / Gemini Live 2.5 |
+| **Main Agent (Puck)** | Live Narrator — Handles voice, vision, and interleaved media | Python / FastAPI / Gemini 3.1 Flash Live |
 | **Supporting Brain** | Background agents for research, safety, and writing | Google ADK / A2A Protocol |
-| **Media Factory** | Generates cinematic animations, illustrations, and music | Veo 3.1 / Gemini 2.5 Flash-Image / Lyria 3 |
+| **Media Factory** | Generates cinematic animations, illustrations, and music | Veo 3.1 / Gemini 3.1 Flash-Image / Lyria 3 |
 
 ```mermaid
 graph TD
@@ -44,9 +44,9 @@ graph TD
     end
     
     subgraph "Google AI Infrastructure"
-        Puck <-->|Multimodal Flow| GeminiLive[Gemini Live 2.5 Flash]
+        Puck <-->|Multimodal Flow| GeminiLive[Gemini 3.1 Flash Live]
         Illustrator -->|Video Generation| Veo[Veo 3.1]
-        Illustrator -->|Dynamic Rendering| FlashImage[Gemini 2.5 Flash-Image]
+        Illustrator -->|Dynamic Rendering| FlashImage[Gemini 3.1 Flash-Image]
         Illustrator -->|Audio Composition| Lyria3[Lyria 3]
     end
     
@@ -217,10 +217,11 @@ The **Media Factory** provides a seamless, context-aware visual layer that makes
 - **Function**: Transforms the static character description into a 4-second magical video preview.
 - **Trigger**: Activated by the user via the "Animate" button in the Character Workshop.
 
-### 6.2 Interleaved Illustrations (Gemini 2.5 Flash-Image)
-- **Technology**: **Gemini 2.5 Flash-Image**.
+### 6.2 Interleaved Illustrations (Gemini 3.1 Flash-Image)
+- **Technology**: **Gemini 3.1 Flash-Image**.
 - **Function**: Automatically generates high-quality watercolor illustrations for every new scene.
 - **Mechanism**: The Main Agent (Puck) triggers a `generateIllustration` tool call, which is processed by the backend. The `StoryAvatarGenerator` then orchestrates a multi-model pipeline: first generating a watercolor image, then passing that image to Lyria to compose a matching background track.
+- **Movement Loop**: Puck also uses the `recordMovement` tool to update the **Heroic Energy** state when visual confirmation of an exercise is received.
 
 ### 6.3 Adaptive Soundtracks (Lyria 3)
 - **Technology**: **Lyria 3** (Google's latest music generation family).
@@ -361,10 +362,10 @@ The Orchestrator saves agent outputs (`research_findings`, `judge_feedback`) int
 |---|---|---|
 | **Main LLM Brain** | Gemini 3.1 Pro | For orchestration and writing |
 | **Fast Reasoning** | Gemini 3.1 Flash-Lite | For research and judging |
-| **Live Interaction** | Gemini Live 2.5 Flash | Real-time multimodal streaming |
+| **Live Interaction** | Gemini 3.1 Flash Live | Real-time multimodal streaming |
 | **Video Production** | Veo 3.1 | For character animation |
 | **Audio Production** | Lyria 3 | For adaptive soundtracks |
-| **Image Production** | Gemini 2.5 Flash-Image | For scene illustrations |
+| **Image Production** | Gemini 3.1 Flash-Image | For scene illustrations |
 | **Agent Framework** | Google Agent Development Kit (ADK) | 1.22.0 |
 | **Frontend** | React 19 + Vite | "Magic Mirror" Dashboard |
 | **Backend** | FastAPI (Python 3.12) | Main Agent bridge |
