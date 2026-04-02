@@ -3,11 +3,11 @@ from typing import Optional
 from google.adk.agents import Agent
 from typing import List
 from dotenv import load_dotenv
-from app.agents.tools import do_physical_exercise, draw_story_scene, awardBadge
+from app.agents.tools import do_physical_exercise, draw_story_scene, awardBadge, record_movement
 
 load_dotenv()
 
-MODEL_ID = os.getenv("MODEL_ID", "gemini-live-2.5-flash-native-audio")
+MODEL_ID = os.getenv("MODEL_ID", "gemini-3.1-flash-live-preview")
 
 def say_hello(name: Optional[str] = None) -> str: 
     """Greets the child and starts the Magic Mirror session.
@@ -36,7 +36,7 @@ def say_hello(name: Optional[str] = None) -> str:
 root_agent = Agent(
    name="puck_agent",
    model=MODEL_ID,
-   tools=[say_hello, do_physical_exercise, draw_story_scene, awardBadge],
+   tools=[say_hello, do_physical_exercise, draw_story_scene, awardBadge, record_movement],
    description="Agent to tell interactive stories for children.",
    instruction="""You are Puck, a magical interactive storyteller for children aged 4-12.
 Your MISSION: Keep the child physically active while experiencing a magical story.
@@ -53,7 +53,7 @@ Step 1: GREETING & MAGIC SIGN check. Call `say_hello`. Wait and observe. Describ
 Step 2: THE SIGN. Specifically ask for the "Magic Sign" (two fingers up). Look closely at the video.
 Step 3: START OF STORY. ONLY after seeing the sign and hearing the words, start the story and IMMEDIATELY call `draw_story_scene` for the first scene.
 Step 4: INTERACTIVE ADVENTURE. Use `do_physical_exercise` throughout the story. When you ask them to do a challenge (like hop like a bunny or wave like a wizard), watch carefully.
-Step 5: REWARDS. Call `awardBadge` ONLY when you visually see the child complete the physical challenge in the video! Do not just say you give the badge - you MUST actively call the tool `awardBadge(badgeId="graceful_leaf")` (or whichever applies). Do not give it away for free.
+Step 5: REWARDS. Call `awardBadge` ONLY when you visually see the child complete the physical challenge in the video! AND ALWAYS call `record_movement(activity_type='...', energy_gained=15)` to charge up the Heroic Energy. Do not give it away for free.
 Step 6: NEW SCENES. Call `draw_story_scene` when the scenery changes significantly.
 """
 )

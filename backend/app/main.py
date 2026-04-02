@@ -55,7 +55,7 @@ app.include_router(puck_live_router, prefix="/ws", tags=["puck_live"])
 async def get_config():
     return {
         "PROJECT_ID": os.getenv("GOOGLE_CLOUD_PROJECT"),
-        "MODEL_ID": os.getenv("MODEL_ID", "gemini-live-2.5-flash-native-audio"),
+        "MODEL_ID": os.getenv("MODEL_ID", "gemini-3.1-flash-live-preview"),
         "MODEL_ID_IMAGE": os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview"),
         "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY")
     }
