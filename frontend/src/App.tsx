@@ -65,6 +65,8 @@ const App: React.FC = () => {
   const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
   const [lastAwarded, setLastAwarded] = useState<Achievement | null>(null);
   const [storyChoices, setStoryChoices] = useState<string[]>([]);
+  const [heroicEnergy, setHeroicEnergy] = useState(0);
+  const [lastMovement, setLastMovement] = useState<{type: string, energy: number} | null>(null);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [accumulatedStory, setAccumulatedStory] = useState<string[]>([]);
   const pendingStoryRef = useRef<string>('');
@@ -528,6 +530,11 @@ const App: React.FC = () => {
                   logDebug(`🎵 Playing custom background music: ${fullMusicUrl}`);
                   setBackgroundMusicUrl(fullMusicUrl);
                 }
+            } else if (msgType === 'MOVEMENT_RECORDED') {
+                logDebug(`⚡ Movement detected: ${data.activityType} (+${data.energyGained} energy)`);
+                setHeroicEnergy(prev => Math.min(prev + data.energyGained, 100)); // Cap at 100 for visual beauty
+                setLastMovement({ type: data.activityType, energy: data.energyGained });
+                setTimeout(() => setLastMovement(null), 3000);
             }
         };
 
@@ -796,6 +803,30 @@ const App: React.FC = () => {
                <div className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
                <span className="text-white text-[12px] font-black tracking-widest uppercase">{isUserSpeaking ? "User Speaking" : "AI Storytelling"}</span>
             </div>
+            
+            {/* Movement Glow Overlay */}
+            {lastMovement && (
+              <div className="absolute inset-0 bg-yellow-400/20 animate-pulse border-8 border-yellow-400 rounded-[40px] pointer-events-none flex items-center justify-center">
+                 <div className="bg-yellow-400 text-purple-900 px-6 py-2 rounded-full font-black text-xl shadow-2xl animate-bounce">
+                    +{lastMovement.energy} ENERGY!
+                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Heroic Energy Dashboard (Phase 1 Movement Metrics) */}
+          <div className="glass-card rounded-[40px] p-6 shadow-xl bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-black text-orange-800 flex items-center gap-2"><span className="text-2xl">🔥</span> Heroic Energy</h3>
+              <span className="text-2xl font-black text-orange-600">{heroicEnergy}%</span>
+            </div>
+            <div className="w-full bg-orange-200/50 h-6 rounded-full overflow-hidden p-1 border border-orange-200">
+               <div 
+                 className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-1000 ease-out shadow-inner"
+                 style={{ width: `${heroicEnergy}%` }}
+               />
+            </div>
+            <p className="text-[10px] text-orange-700/60 font-bold uppercase tracking-widest mt-3 text-center">Movement is the key to the magic</p>
           </div>
 
           <div className="glass-card rounded-[40px] p-6 flex-1 shadow-inner bg-white/60 overflow-y-auto max-h-[300px] border border-white/50 backdrop-blur-md">

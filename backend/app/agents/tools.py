@@ -83,3 +83,25 @@ def awardBadge(badgeId: str) -> str:
             logger.error(f"Error calling badge callback: {e}")
             
     return f"Badge {badgeId} awarded successfully!"
+
+movement_callbacks = []
+
+def record_movement(activity_type: str, energy_gained: int = 10) -> str:
+    """
+    Records a successful physical movement session and adds to the child's Heroic Energy score.
+    Call this whenever you visually confirm the child has completed a physical challenge.
+    
+    Args:
+        activity_type: Short name of the movement (e.g., 'bunny_hops', 'wizard_waves', 'stamping').
+        energy_gained: Points awarded (default 10 for standard, 20 for extra effort).
+    """
+    # logger.info(f"🛠️ Tool call: record_movement - {activity_type} (+{energy_gained})")
+    
+    for cb in movement_callbacks:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(cb(activity_type, energy_gained))
+        except Exception as e:
+            logger.error(f"Error calling movement callback: {e}")
+            
+    return f"Logged {activity_type}! Heroic Energy increased by {energy_gained} points."

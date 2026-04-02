@@ -15,7 +15,7 @@ from google.genai import types
 
 from app.agents.agent import root_agent as puck_agent
 from google.genai.types import Modality
-from app.agents.tools import illustration_callbacks, badge_callbacks
+from app.agents.tools import illustration_callbacks, badge_callbacks, movement_callbacks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -199,8 +199,23 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
         except Exception as e:
             logger.error(f"Error sending badge via websocket: {e}")
 
+    async def send_movement(activity_type: str, energy: int):
+        try:
+            # logger.info(f"⚡ [WebSocket] Pushing movement: {activity_type} (+{energy})")
+            payload = {
+                "type": "MOVEMENT_RECORDED",
+                "data": {
+                    "activityType": activity_type,
+                    "energyGained": energy
+                }
+            }
+            await websocket.send_text(json.dumps(payload))
+        except Exception as e:
+            logger.error(f"Error sending movement via websocket: {e}")
+
     illustration_callbacks.append(send_illustration)
     badge_callbacks.append(send_badge)
+    movement_callbacks.append(send_movement)
 
     session = await session_service.get_session(app_name="puck_adventure", user_id=user_id, session_id=session_id)
     if not session:
@@ -274,4 +289,6 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
             illustration_callbacks.remove(send_illustration)
         if send_badge in badge_callbacks:
             badge_callbacks.remove(send_badge)
+        if send_movement in movement_callbacks:
+            movement_callbacks.remove(send_movement)
         live_request_queue.close()
