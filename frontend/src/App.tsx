@@ -21,6 +21,11 @@ const PROXY_URL = rawProxyUrl
   ? rawProxyUrl 
   : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/proxy';
 
+// SET TO false to use real Veo 3.1 video generation
+const USE_MOCK_ANIMATION = true;
+// SET TO false to use real Gemini image generation
+const USE_MOCK_AVATAR = true;
+
 const App: React.FC = () => {
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
@@ -103,6 +108,8 @@ const App: React.FC = () => {
   
   // --- LYRIA MUSIC STATE ---
   const [backgroundMusicUrl, setBackgroundMusicUrl] = useState<string | null>(null);
+  const [isGeneratingMusic, setIsGeneratingMusic] = useState(false);
+  const [selectedMusicTheme, setSelectedMusicTheme] = useState<'forest' | 'sorcerer' | 'harp' | 'march'>('forest');
 
   // --- DEV PANEL STATE ---
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
@@ -242,6 +249,23 @@ const App: React.FC = () => {
     setAvatarUrl(null);
     setActionUrl(null);
     logDebug("🧚 Imagining Puck's fairytale form...");
+    
+    if (USE_MOCK_AVATAR) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Use a nice placeholder representation of the chosen style
+        const mockUrl = `https://placehold.co/400x400/805ad5/ffffff?text=Puck+${characterStyle.toUpperCase()}`;
+        setAvatarUrl(mockUrl);
+        setCurrentIllustration(mockUrl);
+        logDebug("✓ Puck is ready! (Mock)");
+      } catch (err) {
+        logDebug("Failed to create mock avatar: " + err);
+      } finally {
+        setIsGeneratingAvatar(false);
+      }
+      return;
+    }
+
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
       const dynamicDescription = getOnboardingDescription(characterStyle);
@@ -269,6 +293,22 @@ const App: React.FC = () => {
     setAvatarUrl(null);
     setActionUrl(null);
     logDebug("📸 Imagining Puck from this photo...");
+    
+    if (USE_MOCK_AVATAR) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Use local object URL to display the uploaded photo instantly
+        const mockUrl = URL.createObjectURL(file);
+        setAvatarUrl(mockUrl);
+        setCurrentIllustration(mockUrl);
+        logDebug("✓ Puck's magic transformation complete! (Mock)");
+      } catch (err) {
+        logDebug("Failed to create mock photo avatar: " + err);
+      } finally {
+        setIsGeneratingAvatar(false);
+      }
+      return;
+    }
     
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
@@ -350,11 +390,31 @@ const App: React.FC = () => {
   };
 
   const handleAnimatePuck = async () => {
-    const dynamicDescription = getOnboardingDescription(characterStyle);
-    if (!dynamicDescription) return;
     setIsGeneratingVideo(true);
     setVideoUrl(null);
+    
+    if (USE_MOCK_ANIMATION) {
+      logDebug("🌿 Mocking Puck's Animation (using sample video)...");
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
+        setCurrentIllustration(null);
+        logDebug("✓ Puck is ALIVE! (Mock animation complete)");
+      } catch (err) {
+        logDebug("Failed to animate Puck: " + err);
+      } finally {
+        setIsGeneratingVideo(false);
+      }
+      return;
+    }
+
     logDebug("🌿 Sending Puck to the Animation Studio (Veo 3.1)...");
+    const dynamicDescription = getOnboardingDescription(characterStyle);
+    if (!dynamicDescription) {
+      setIsGeneratingVideo(false);
+      return;
+    }
+    
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
       const response = await fetch(`${backendUrl}/api/avatar/animate`, {
@@ -372,6 +432,38 @@ const App: React.FC = () => {
       logDebug("Failed to animate Puck: " + err);
     } finally {
       setIsGeneratingVideo(false);
+    }
+  };
+
+  const handleGenerateMusic = async (theme: 'forest' | 'sorcerer' | 'harp' | 'march') => {
+    setIsGeneratingMusic(true);
+    setSelectedMusicTheme(theme);
+    logDebug(`🎵 Composing Puck's theme: ${theme}...`);
+    
+    const themeDescriptions = {
+      forest: "whimsical woodland melodies with magical flutes, gentle acoustic guitar, and soft birds chirping, cinematic fantasy music",
+      sorcerer: "mystical celestial chords, sparkling chime melodies, and magical starry synth pads, cinematic fantasy music",
+      harp: "elegant royal palace harp music, light woodwinds, and soft classical fanfare, cinematic fantasy music",
+      march: "brave heroic adventure march with soft horn fanfares, light marching drums, and orchestral strings, cinematic fantasy music"
+    };
+    
+    try {
+      const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      const response = await fetch(`${backendUrl}/api/avatar/music`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: themeDescriptions[theme] })
+      });
+      const data = await response.json();
+      if (data.path) {
+        const fullPath = backendUrl + data.path;
+        setBackgroundMusicUrl(fullPath);
+        logDebug("✓ Puck's personal theme music composed!");
+      }
+    } catch (err) {
+      logDebug("Failed to compose music: " + err);
+    } finally {
+      setIsGeneratingMusic(false);
     }
   };
 
@@ -755,40 +847,90 @@ const App: React.FC = () => {
         {!isOnboarded ? (
           <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
             <div className="glass-card rounded-[40px] p-8 shadow-xl bg-white/60 border border-white/50 backdrop-blur-md text-center">
-              <h2 className="text-3xl font-black bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2 mb-2">
-                🔮 Activate the Magic Mirror
-              </h2>
-              <p className="text-gray-600 font-semibold mb-6">
-                Choose Puck's style, then upload a photo of the child to create your unique fairytale hero!
-              </p>
               
-              {/* Step 1: Character Style */}
-              <div className="mb-6 text-left">
-                <label className="text-xs font-black text-purple-700 uppercase tracking-widest block mb-3">1. Select Puck's Style</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { id: 'elf', icon: '🧚', label: 'Elf', desc: 'Magic Woodland Elf' },
-                    { id: 'wizard', icon: '🪄', label: 'Wizard', desc: 'Young Sorcerer' },
-                    { id: 'royal', icon: '👑', label: 'Royal', desc: 'Prince / Princess' },
-                    { id: 'critter', icon: '🦊', label: 'Critter', desc: 'Fox / Woodland Animal' }
-                  ].map(style => (
+              {/* Conditional Title and Subtitle depending on Step */}
+              {!avatarUrl ? (
+                <>
+                  <h2 className="text-3xl font-black bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2 mb-2">
+                    🔮 Step 1 of 3: Activate the Magic Mirror
+                  </h2>
+                  <p className="text-gray-600 font-semibold mb-6">
+                    Choose Puck's style, then upload a photo of the child to create your unique fairytale hero!
+                  </p>
+                </>
+              ) : !videoUrl ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
                     <button 
-                      key={style.id}
-                      onClick={() => setCharacterStyle(style.id as any)}
-                      className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${characterStyle === style.id ? 'bg-white border-purple-500 shadow-md scale-105' : 'bg-white/40 border-transparent hover:bg-white/60'}`}
+                      onClick={() => {
+                        setAvatarUrl(null);
+                        setCurrentIllustration(null);
+                      }}
+                      className="px-4 py-2 text-xs font-black text-purple-700 hover:text-white bg-purple-100 hover:bg-purple-600 rounded-full transition-all flex items-center gap-1 shadow-sm"
                     >
-                      <span className="text-4xl mb-2">{style.icon}</span>
-                      <span className="text-sm font-black text-purple-950">{style.label}</span>
-                      <span className="text-[10px] text-gray-500 leading-tight mt-1">{style.desc}</span>
+                      ⬅ Back
                     </button>
-                  ))}
+                    <h2 className="text-2xl font-black bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
+                      🎬 Step 2 of 3: Animate Puck
+                    </h2>
+                    <div className="w-16"></div> {/* Spacer for center alignment */}
+                  </div>
+                  <p className="text-gray-600 font-semibold mb-6">
+                    Watch Puck wake up and smile in the magic mirror!
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <button 
+                      onClick={() => {
+                        setVideoUrl(null);
+                        setBackgroundMusicUrl(null);
+                      }}
+                      className="px-4 py-2 text-xs font-black text-purple-700 hover:text-white bg-purple-100 hover:bg-purple-600 rounded-full transition-all flex items-center gap-1 shadow-sm"
+                    >
+                      ⬅ Back
+                    </button>
+                    <h2 className="text-2xl font-black bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
+                      🎵 Step 3 of 3: Choose Music Theme
+                    </h2>
+                    <div className="w-16"></div> {/* Spacer for center alignment */}
+                  </div>
+                  <p className="text-gray-600 font-semibold mb-6">
+                    Compose a custom magical tune inspired by your hero's appearance.
+                  </p>
+                </>
+              )}
+              
+              {/* Step 1 Style Grid (Only shown when no avatar is generated yet) */}
+              {!avatarUrl && (
+                <div className="mb-6 text-left animate-in fade-in duration-300">
+                  <label className="text-xs font-black text-purple-700 uppercase tracking-widest block mb-3">1. Select Puck's Style</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { id: 'elf', icon: '🧚', label: 'Elf', desc: 'Magic Woodland Elf' },
+                      { id: 'wizard', icon: '🪄', label: 'Wizard', desc: 'Young Sorcerer' },
+                      { id: 'royal', icon: '👑', label: 'Royal', desc: 'Prince / Princess' },
+                      { id: 'critter', icon: '🦊', label: 'Critter', desc: 'Fox / Woodland Animal' }
+                    ].map(style => (
+                      <button 
+                        key={style.id}
+                        onClick={() => setCharacterStyle(style.id as any)}
+                        className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${characterStyle === style.id ? 'bg-white border-purple-500 shadow-md scale-105' : 'bg-white/40 border-transparent hover:bg-white/60'}`}
+                      >
+                        <span className="text-4xl mb-2">{style.icon}</span>
+                        <span className="text-sm font-black text-purple-950">{style.label}</span>
+                        <span className="text-[10px] text-gray-500 leading-tight mt-1">{style.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Step 2: Activation */}
+              {/* Action Zone */}
               <div className="border-t border-purple-100 pt-6">
                 {!avatarUrl ? (
-                  // UPLOAD ZONE OR DEFAULT GENERATION
+                  // STEP 1 UPLOAD ZONE OR DEFAULT GENERATION
                   <div className="space-y-6">
                     <div 
                       onClick={() => fileInputRef.current?.click()} 
@@ -826,7 +968,7 @@ const App: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  // DISPLAY GENERATED HERO + ANIMATION OPTIONS
+                  // DISPLAY GENERATED HERO (PORTRAIT OR VIDEO)
                   <div className="flex flex-col items-center gap-6">
                     <div className="w-72 h-72 rounded-[40px] overflow-hidden border-8 border-purple-300 shadow-2xl bg-white relative animate-in zoom-in-50 duration-500">
                       {isGeneratingVideo ? (
@@ -849,29 +991,64 @@ const App: React.FC = () => {
                       <p className="text-sm text-gray-500 mt-1">Check out the fairytale look of your hero.</p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isGeneratingAvatar || isGeneratingVideo}
-                        className="flex-1 py-3 px-6 rounded-2xl font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 transition-all border border-indigo-200 text-sm active:scale-95 disabled:opacity-50"
-                      >
-                        🔄 Transform Another Photo
-                      </button>
-                      <button 
-                        onClick={handleAnimatePuck}
-                        disabled={isGeneratingVideo || isGeneratingAvatar}
-                        className="flex-1 py-3 px-6 rounded-2xl font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-md text-sm active:scale-95 disabled:opacity-50"
-                      >
-                        🎬 Animate Puck (Veo 3.1)
-                      </button>
-                    </div>
+                    {!videoUrl ? (
+                      // STEP 2 ANIMATION
+                      <div className="w-full border-t border-purple-100 pt-6 mt-2 text-left animate-in fade-in duration-500">
+                        <button 
+                          onClick={handleAnimatePuck}
+                          disabled={isGeneratingVideo || isGeneratingAvatar}
+                          className="w-full bg-pink-600 hover:bg-pink-700 text-white font-extrabold py-4 rounded-2xl transition-all shadow-md active:scale-95 text-md flex items-center justify-center gap-2"
+                        >
+                          🎬 Animate Puck (Veo 3.1)
+                        </button>
+                      </div>
+                    ) : (
+                      // STEP 3 MUSIC THEME
+                      <div className="w-full border-t border-purple-100 pt-6 mt-2 text-left animate-in fade-in duration-500">
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                          {[
+                            { id: 'forest', icon: '🌲', label: 'Forest Flute', desc: 'Whimsical flutes & chirping birds' },
+                            { id: 'sorcerer', icon: '✨', label: 'Sorcerer Synth', desc: 'Celestial magical chime chords' },
+                            { id: 'harp', icon: '🎵', label: 'Golden Harp', desc: 'Royal palace harp & woodwinds' },
+                            { id: 'march', icon: '🥁', label: 'Heroic March', desc: 'Brave horn marching tune' }
+                          ].map(theme => (
+                            <button
+                              key={theme.id}
+                              onClick={() => handleGenerateMusic(theme.id as any)}
+                              disabled={isGeneratingMusic}
+                              className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${
+                                selectedMusicTheme === theme.id && backgroundMusicUrl 
+                                  ? 'bg-white border-purple-500 shadow-md scale-105' 
+                                  : 'bg-white/40 border-transparent hover:bg-white/60'
+                              } disabled:opacity-50`}
+                            >
+                              <span className="text-3xl mb-1">{theme.icon}</span>
+                              <span className="text-sm font-black text-purple-950">{theme.label}</span>
+                              <span className="text-[10px] text-gray-500 leading-tight mt-1">{theme.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {isGeneratingMusic && (
+                          <div className="flex flex-col items-center gap-4 py-4 text-center">
+                            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-purple-900 font-extrabold text-sm animate-pulse">
+                              🎵 Lyria 3 is composing Puck's theme...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     
-                    <button 
-                      onClick={() => setIsOnboarded(true)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-black text-2xl py-5 rounded-[25px] transition-all shadow-lg hover:scale-[1.02] active:scale-95 mt-4 flex items-center justify-center gap-2"
-                    >
-                      🚀 Enter the Fairytale World
-                    </button>
+                    {videoUrl && backgroundMusicUrl && !isGeneratingMusic && (
+                      // STEP 4 ENTER
+                      <button 
+                        onClick={() => setIsOnboarded(true)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black text-2xl py-5 rounded-[25px] transition-all shadow-lg hover:scale-[1.02] active:scale-95 mt-4 flex items-center justify-center gap-2 animate-in zoom-in-95 duration-300"
+                      >
+                        🚀 Enter the Fairytale World
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

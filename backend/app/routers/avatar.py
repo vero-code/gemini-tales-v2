@@ -70,3 +70,18 @@ async def avatar_pose(request: AvatarRequest):
     path = await loop.run_in_executor(None, generator.generate_avatar_pose, request.description)
     url_path = f"/avatars/{os.path.basename(path)}"
     return {"path": url_path}
+
+class MusicRequest(BaseModel):
+    description: str
+    user_id: str = "test_user"
+
+@router.post("/music")
+async def generate_music(request: MusicRequest):
+    generator = get_generator(request.user_id)
+    loop = asyncio.get_event_loop()
+    img_path = generator.latest_portrait_path if (generator.latest_portrait_path and os.path.exists(generator.latest_portrait_path)) else None
+    
+    filename = await loop.run_in_executor(None, generator.music_gen.generate_scene_music, request.description, img_path)
+    url_path = f"/avatars/{filename}" if filename else None
+    return {"path": url_path}
+
