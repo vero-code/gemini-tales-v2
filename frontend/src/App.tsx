@@ -25,6 +25,8 @@ const PROXY_URL = rawProxyUrl
 const USE_MOCK_ANIMATION = true;
 // SET TO false to use real Gemini image generation
 const USE_MOCK_AVATAR = true;
+// SET TO true to bypass the onboarding screen and load directly into the main story screen for testing
+const BYPASS_ONBOARDING = true;
 
 const App: React.FC = () => {
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
@@ -78,7 +80,7 @@ const App: React.FC = () => {
   const storyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- ONBOARDING & CHARACTER WORKSHOP ---
-  const [isOnboarded, setIsOnboarded] = useState(false);
+  const [isOnboarded, setIsOnboarded] = useState(BYPASS_ONBOARDING);
   const [characterStyle, setCharacterStyle] = useState<'elf' | 'wizard' | 'royal' | 'critter'>('elf');
 
   const getOnboardingDescription = (style: string) => {
@@ -97,10 +99,14 @@ const App: React.FC = () => {
   const { fetchStory, storyText, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
 
   const [characterDescription, setCharacterDescription] = useState('a small woodland elf with translucent wings and a twig wand');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    BYPASS_ONBOARDING ? "https://placehold.co/400x400/805ad5/ffffff?text=Puck+ELF" : null
+  );
   const [actionUrl, setActionUrl] = useState<string | null>(null);
   const [poseUrl, setPoseUrl] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(
+    BYPASS_ONBOARDING ? "https://www.w3schools.com/html/mov_bbb.mp4" : null
+  );
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [isGeneratingAction, setIsGeneratingAction] = useState(false);
   const [isGeneratingPose, setIsGeneratingPose] = useState(false);
@@ -117,6 +123,7 @@ const App: React.FC = () => {
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedMic, setSelectedMic] = useState('');
   const [selectedCamera, setSelectedCamera] = useState('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAudioOn, setIsAudioOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [chatMessages, setChatMessages] = useState<{sender: string, text: string, type: string}[]>([]);
@@ -824,26 +831,152 @@ const App: React.FC = () => {
       )}
 
       {/* --- HEADER --- */}
-      <header className="text-center z-10 w-full max-w-7xl relative">
-        <div className="absolute top-0 right-0 hidden md:block">
+      <header className="z-50 w-full max-w-7xl relative flex flex-col md:flex-row items-center justify-between gap-4 border-b border-purple-100 pb-4">
+        <div className="flex flex-col md:flex-row items-baseline gap-2 md:gap-4 text-center md:text-left">
+          <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent tracking-tight">
+            Gemini Tales
+          </h1>
+          <p className="text-sm md:text-base text-gray-500 font-medium italic">
+            A magical world where stories come to life!
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* Connection status badge */}
+          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+            <span className={`w-2.5 h-2.5 rounded-full ${connectionStatus === 'Connected' ? 'bg-green-500 animate-pulse' : 'bg-purple-500'}`}></span>
+            <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              {connectionStatus === 'Connected' ? 'Connected' : connectionStatus === 'Connecting...' ? 'Connecting' : 'Disconnected'}
+            </span>
+          </div>
+
+          {/* Connect / Disconnect button */}
+          {connectionStatus !== 'Connected' ? (
+            <button 
+              onClick={connect} 
+              className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-bold text-xs shadow-md transition-all active:scale-95 hover:shadow-lg"
+            >
+              Connect API
+            </button>
+          ) : (
+            <button 
+              onClick={disconnect} 
+              className="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full font-bold text-xs transition-all active:scale-95"
+            >
+              Disconnect
+            </button>
+          )}
+
+          {/* Settings gear popover wrapper */}
+          <div className="relative z-50">
+            <button
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              className={`p-2 rounded-full border border-gray-200 bg-white/80 hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all shadow-sm flex items-center justify-center ${
+                isSettingsOpen ? 'bg-purple-100 border-purple-300 text-purple-700' : ''
+              }`}
+              title="Device Settings"
+              style={{ width: '36px', height: '36px' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0Z" />
+              </svg>
+            </button>
+
+            {isSettingsOpen && (
+              <div className="absolute right-0 top-full mt-2.5 w-80 bg-white/95 backdrop-blur-xl border border-purple-100 rounded-3xl shadow-2xl p-6 z-50 animate-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center justify-between mb-4 border-b border-purple-50 pb-2">
+                  <h3 className="font-black text-purple-950 text-md flex items-center gap-2">
+                    ⚙️ Mirror Settings
+                  </h3>
+                  <button 
+                    onClick={() => setIsSettingsOpen(false)}
+                    className="text-xs font-bold text-purple-600 hover:text-purple-800"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-left">
+                  {/* Microphone selector */}
+                  <div>
+                    <label className="block text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1.5">Microphone</label>
+                    <select 
+                      className="w-full border border-purple-100 rounded-xl p-2.5 bg-white text-xs font-semibold text-purple-950 focus:border-purple-400 outline-none" 
+                      value={selectedMic} 
+                      onChange={e => setSelectedMic(e.target.value)}
+                    >
+                      <option value="">Default Microphone</option>
+                      {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Camera selector */}
+                  <div>
+                    <label className="block text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1.5">Camera</label>
+                    <select 
+                      className="w-full border border-purple-100 rounded-xl p-2.5 bg-white text-xs font-semibold text-purple-950 focus:border-purple-400 outline-none" 
+                      value={selectedCamera} 
+                      onChange={e => setSelectedCamera(e.target.value)}
+                    >
+                      <option value="">Default Camera</option>
+                      {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Audio/Video Streaming Toggles */}
+                  <div className="flex gap-2 pt-2 border-t border-purple-50">
+                    <button 
+                      onClick={toggleAudio} 
+                      disabled={connectionStatus !== 'Connected'}
+                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                        isAudioOn 
+                          ? 'bg-green-100 text-green-700 border border-green-300' 
+                          : 'bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100'
+                      }`}
+                    >
+                      <span>{isAudioOn ? '🎙️ Mic ON' : '🎙️ Mic OFF'}</span>
+                    </button>
+                    <button 
+                      onClick={toggleVideo} 
+                      disabled={connectionStatus !== 'Connected'}
+                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                        isVideoOn 
+                          ? 'bg-green-100 text-green-700 border border-green-300' 
+                          : 'bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100'
+                      }`}
+                    >
+                      <span>{isVideoOn ? '📷 Cam ON' : '📷 Cam OFF'}</span>
+                    </button>
+                  </div>
+                  
+                  {connectionStatus !== 'Connected' && (
+                    <p className="text-[10px] text-gray-400 italic text-center mt-1">
+                      * Connect API to enable microphone and camera streaming.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* GitHub Star link */}
           <a 
             href="https://github.com/vero-code/gemini-tales" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-6 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full text-gray-700 font-bold text-sm hover:shadow-lg hover:border-purple-300 transition-all group"
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full text-gray-700 font-bold text-xs hover:shadow-md hover:border-purple-300 transition-all group"
           >
-            <svg height="20" viewBox="0 0 16 16" version="1.1" width="20" aria-hidden="true" className="fill-current text-gray-600 group-hover:text-purple-600 transition-colors">
+            <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" aria-hidden="true" className="fill-current text-gray-600 group-hover:text-purple-600 transition-colors">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
             </svg>
-            <span>Star on GitHub</span>
+            <span>Star</span>
           </a>
         </div>
-        <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Gemini Tales</h1>
-        <p className="text-xl text-gray-500 mt-2 font-medium italic">A magical world where stories come to life!</p>
       </header>
 
       {/* --- MAIN STORY EXPERIENCE (Beautiful UI) --- */}
-      <main className="w-full max-w-7xl flex flex-col lg:flex-row gap-8 z-10">
+      <main className="w-full max-w-7xl flex flex-col lg:flex-row gap-8">
         {!isOnboarded ? (
           <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
             <div className="glass-card rounded-[40px] p-8 shadow-xl bg-white/60 border border-white/50 backdrop-blur-md text-center">
@@ -1194,7 +1327,7 @@ const App: React.FC = () => {
 
       {/* --- DEVELOPER CONTROL CENTER (The Google UI you requested) --- */}
       {isOnboarded && (
-        <section className="w-full max-w-7xl bg-white/80 backdrop-blur-xl border-2 border-purple-100 shadow-2xl rounded-[40px] p-8 z-10 flex flex-col lg:flex-row gap-8 animate-in slide-in-from-bottom-8 duration-500">
+        <section className="w-full max-w-7xl bg-white/80 backdrop-blur-xl border-2 border-purple-100 shadow-2xl rounded-[40px] p-8 flex flex-col lg:flex-row gap-8 animate-in slide-in-from-bottom-8 duration-500">
           {/* Connection & Media Settings */}
           <div className="flex-1 flex flex-col gap-6">
               {/* Mode Selector */}
@@ -1250,47 +1383,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
-                <div className="flex gap-3 mb-4">
-                    {connectionStatus !== 'Connected' ? (
-                      storyMode === 'live' && (
-                        <button onClick={connect} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all">Connect API</button>
-                      )
-                    ) : (
-                      <button onClick={disconnect} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all">Disconnect</button>
-                    )}
-                </div>
-                <div className="text-sm font-medium text-gray-600">
-                    Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
-                </div>
-              </div>
-
-              {/* --- AUDIO CONTROLS --- */}
-              <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                  <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">Microphone</label>
-                      <select className="w-full border border-gray-200 rounded-lg p-2 bg-white text-sm" value={selectedMic} onChange={e => setSelectedMic(e.target.value)}>
-                          <option value="">Default Microphone</option>
-                          {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
-                      </select>
-                  </div>
-                  <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">Camera</label>
-                      <select className="w-full border border-gray-200 rounded-lg p-2 bg-white text-sm" value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)}>
-                          <option value="">Default Camera</option>
-                          {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
-                      </select>
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                      <button onClick={toggleAudio} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${isAudioOn ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                          {isAudioOn ? 'Stop Audio' : 'Start Audio'}
-                      </button>
-                      <button onClick={toggleVideo} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${isVideoOn ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                          {isVideoOn ? 'Stop Video' : 'Start Video'}
-                      </button>
-                  </div>
-              </div>
+              {/* --- AUDIO CONTROLS REMOVED --- */}
           </div>
 
           {/* Chat Logs & Debug Console */}
