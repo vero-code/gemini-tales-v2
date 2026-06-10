@@ -107,6 +107,9 @@ const App: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(
     BYPASS_ONBOARDING ? "https://www.w3schools.com/html/mov_bbb.mp4" : null
   );
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(
+    BYPASS_ONBOARDING ? "https://www.w3schools.com/html/mov_bbb.mp4" : null
+  );
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [isGeneratingAction, setIsGeneratingAction] = useState(false);
   const [isGeneratingPose, setIsGeneratingPose] = useState(false);
@@ -406,6 +409,7 @@ const App: React.FC = () => {
       try {
         await new Promise(resolve => setTimeout(resolve, 1000));
         setVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
+        setAvatarVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
         setCurrentIllustration(null);
         logDebug("✓ Puck is ALIVE! (Mock animation complete)");
       } catch (err) {
@@ -434,6 +438,7 @@ const App: React.FC = () => {
       if (data.path) {
         setCurrentIllustration(null); // Clear static image to show video
         setVideoUrl(backendUrl + data.path);
+        setAvatarVideoUrl(backendUrl + data.path);
         logDebug("✓ Puck is ALIVE! Animation complete.");
       }
     } catch (err) {
@@ -702,7 +707,8 @@ const App: React.FC = () => {
     setIsVideoOn(false);
     setIsCameraActive(false);
     setCurrentIllustration(null);
-    setVideoUrl(null);
+    setVideoUrl(BYPASS_ONBOARDING ? "https://www.w3schools.com/html/mov_bbb.mp4" : null);
+    setAvatarVideoUrl(BYPASS_ONBOARDING ? "https://www.w3schools.com/html/mov_bbb.mp4" : null);
     setStoryChoices([]);
     setAccumulatedStory([]);
     setAiTranscription('');
@@ -1325,6 +1331,32 @@ const App: React.FC = () => {
                           <div className="w-20 h-20 border-8 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                           <p className="text-purple-600 text-xl font-black">Story is active...</p>
                         </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Floating Small Circular Avatar of Puck */}
+                  {!videoUrl && currentIllustration && (avatarVideoUrl || avatarUrl || actionUrl) && (
+                    <div className={`absolute top-4 left-4 w-28 h-28 rounded-full overflow-hidden border-4 shadow-2xl z-30 transition-all duration-300 hover:scale-105 bg-indigo-950 ${
+                      connectionStatus === 'Connected' && !isUserSpeaking 
+                        ? 'border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.6)] scale-102 ring-4 ring-yellow-400/20 animate-pulse' 
+                        : 'border-purple-500 shadow-lg'
+                    }`}>
+                      {avatarVideoUrl ? (
+                        <video 
+                          src={avatarVideoUrl} 
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <img 
+                          src={actionUrl || avatarUrl || undefined} 
+                          className="w-full h-full object-cover" 
+                          alt="Puck Avatar" 
+                        />
                       )}
                     </div>
                   )}
