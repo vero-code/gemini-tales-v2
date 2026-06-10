@@ -845,7 +845,13 @@ const App: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* Connection status badge */}
           <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full px-4 py-2 shadow-sm">
-            <span className={`w-2.5 h-2.5 rounded-full ${connectionStatus === 'Connected' ? 'bg-green-500 animate-pulse' : 'bg-purple-500'}`}></span>
+            <span className={`w-2.5 h-2.5 rounded-full ${
+              connectionStatus === 'Connected' 
+                ? 'bg-green-500 animate-pulse' 
+                : connectionStatus === 'Connecting...' 
+                  ? 'bg-yellow-500 animate-pulse' 
+                  : 'bg-red-500'
+            }`}></span>
             <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
               {connectionStatus === 'Connected' ? 'Connected' : connectionStatus === 'Connecting...' ? 'Connecting' : 'Disconnected'}
             </span>
@@ -996,7 +1002,7 @@ const App: React.FC = () => {
 
           {/* GitHub Repository link */}
           <a 
-            href="https://github.com/vero-code/gemini-tales" 
+            href="https://github.com/vero-code/gemini-tales-v2" 
             target="_blank" 
             rel="noopener noreferrer"
             className="p-2 rounded-full border border-gray-200 bg-white/80 hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all shadow-sm flex items-center justify-center group"
@@ -1420,7 +1426,7 @@ const App: React.FC = () => {
 
       {/* --- FOOTER --- */}
       <footer className="w-full max-w-[1600px] border-t border-purple-100/50 pt-6 pb-2 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold text-purple-900/60 animate-in fade-in duration-1000">
-        <p>© 2026 Developed by <a href="https://github.com/vero-code" target="_blank" rel="noopener noreferrer" className="text-purple-800 underline hover:text-purple-950 transition-colors">Veronika Kashtanova</a></p>
+        <p>© 2026 Developed by <a href="https://github.com/vero-code" target="_blank" rel="noopener noreferrer" className="text-purple-800 underline hover:text-purple-950 transition-colors">Veronika Kashtanova</a>. Updated for <a href="https://devpost.team/google-cloud-for-startups/projects/15415" target="_blank" rel="noopener noreferrer" className="text-purple-800 underline hover:text-purple-950 transition-colors">Google for Startups AI Agents Challenge</a></p>
         <p>🪄 Crafted with Google Gemini, ADK, Cloud Run, Veo & Lyria. Let your imagination soar!</p>
       </footer>
 
