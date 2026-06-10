@@ -774,7 +774,7 @@ const App: React.FC = () => {
       />
       
       {/* --- BACKGROUND MUSIC (LYRIA 3) --- */}
-      {backgroundMusicUrl && (
+      {isOnboarded && backgroundMusicUrl && (
         <audio 
           src={backgroundMusicUrl} 
           autoPlay 
@@ -1037,6 +1037,25 @@ const App: React.FC = () => {
                             </p>
                           </div>
                         )}
+                      </div>
+                    )}
+                    
+                    {videoUrl && backgroundMusicUrl && !isGeneratingMusic && (
+                      <div className="w-full bg-purple-50/60 border border-purple-100 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 mb-2 shadow-sm animate-in fade-in duration-300">
+                        <div className="flex items-center gap-3 text-left">
+                          <span className="text-3xl animate-pulse">🎵</span>
+                          <div>
+                            <p className="font-black text-purple-950 text-sm">Theme Song Ready!</p>
+                            <p className="text-xs text-gray-500">Listen to the custom fairytale tune.</p>
+                          </div>
+                        </div>
+                        <audio 
+                          src={backgroundMusicUrl} 
+                          controls 
+                          autoPlay
+                          loop
+                          className="h-10 w-full sm:w-60 accent-purple-600"
+                        />
                       </div>
                     )}
                     
