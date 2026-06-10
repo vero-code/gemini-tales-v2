@@ -26,11 +26,15 @@ class MusicGenerator:
         self.location = location
         self.model_id = os.getenv("LYRIA_MODEL_ID", "lyria-3-clip-preview")
 
-        self.client = genai.Client(
-            vertexai=True,
-            project=self.project_id,
-            location=self.location
-        )
+        use_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "true").lower() in ("true", "1", "yes")
+        if use_vertex:
+            self.client = genai.Client(
+                vertexai=True,
+                project=self.project_id,
+                location=self.location
+            )
+        else:
+            self.client = genai.Client()
         
         # Output directory for temporary music files
         self.output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "temp_avatars")

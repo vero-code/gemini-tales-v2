@@ -72,6 +72,20 @@ const App: React.FC = () => {
   const pendingStoryRef = useRef<string>('');
   const storyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // --- ONBOARDING & CHARACTER WORKSHOP ---
+  const [isOnboarded, setIsOnboarded] = useState(false);
+  const [characterStyle, setCharacterStyle] = useState<'elf' | 'wizard' | 'royal' | 'critter'>('elf');
+
+  const getOnboardingDescription = (style: string) => {
+    const stylePrompts = {
+      elf: "a magical woodland elf with translucent wings, a green tunic, and a twig wand, cinematic live-action fantasy film style, highly detailed, realistic, photorealistic",
+      wizard: "a young wizard with a glowing star staff, a pointy hat, and a starry blue cloak, cinematic live-action fantasy film style, highly detailed, realistic, photorealistic",
+      royal: "a fairytale prince or princess with a glittering golden crown, a velvet cape, and noble features, cinematic live-action fantasy film style, highly detailed, realistic, photorealistic",
+      critter: "a cute woodland creature like a talking fox or a child with cozy fox ears and a tiny green satchel, cinematic live-action fantasy film style, highly detailed, realistic, photorealistic"
+    };
+    return stylePrompts[style as keyof typeof stylePrompts] || stylePrompts.elf;
+  };
+
   // --- MODE STATE ---
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
   const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('solar_power');
@@ -230,16 +244,16 @@ const App: React.FC = () => {
     logDebug("🧚 Imagining Puck's fairytale form...");
     try {
       const backendUrl = PROXY_URL.replace('ws://', 'http://').replace('wss://', 'https://').split('/ws/')[0];
+      const dynamicDescription = getOnboardingDescription(characterStyle);
       const response = await fetch(`${backendUrl}/api/avatar/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: characterDescription })
+        body: JSON.stringify({ description: dynamicDescription })
       });
       const data = await response.json();
       if (data.path) {
         const fullPath = backendUrl + data.path;
         setAvatarUrl(fullPath);
-        // Also set as current illustration if we want to see it big
         setCurrentIllustration(fullPath);
         logDebug("✓ Puck is ready!");
       }
@@ -261,7 +275,8 @@ const App: React.FC = () => {
       
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('description', characterDescription);
+      const dynamicDescription = getOnboardingDescription(characterStyle);
+      formData.append('description', dynamicDescription);
       
       const response = await fetch(`${backendUrl}/api/avatar/from-photo`, {
         method: 'POST',
@@ -335,7 +350,8 @@ const App: React.FC = () => {
   };
 
   const handleAnimatePuck = async () => {
-    if (!characterDescription) return;
+    const dynamicDescription = getOnboardingDescription(characterStyle);
+    if (!dynamicDescription) return;
     setIsGeneratingVideo(true);
     setVideoUrl(null);
     logDebug("🌿 Sending Puck to the Animation Studio (Veo 3.1)...");
@@ -344,7 +360,7 @@ const App: React.FC = () => {
       const response = await fetch(`${backendUrl}/api/avatar/animate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: characterDescription })
+        body: JSON.stringify({ description: dynamicDescription })
       });
       const data = await response.json();
       if (data.path) {
@@ -657,6 +673,13 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2] font-sans">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} 
+      />
       
       {/* --- BACKGROUND MUSIC (LYRIA 3) --- */}
       {backgroundMusicUrl && (
@@ -729,377 +752,381 @@ const App: React.FC = () => {
 
       {/* --- MAIN STORY EXPERIENCE (Beautiful UI) --- */}
       <main className="w-full max-w-7xl flex flex-col lg:flex-row gap-8 z-10">
-        <div className="flex-1 flex flex-col gap-6">
-          <div className="glass-card rounded-[40px] overflow-hidden flex-1 shadow-xl flex flex-col relative min-h-[400px] bg-white/60 border border-white/50 backdrop-blur-md">
-            <div className="flex-1 bg-white/20 flex items-center justify-center relative">
-              {videoUrl ? (
-                <video src={videoUrl || undefined} autoPlay loop muted playsInline className="w-full h-full object-cover animate-in fade-in duration-1000" />
-              ) : currentIllustration ? (
-                <img src={currentIllustration || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Story Scene" />
-              ) : (actionUrl || avatarUrl) ? (
-                <img src={actionUrl || avatarUrl || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Puck" />
-              ) : (
-                <div className="text-center p-12 space-y-6">
-                  {appState === 'IDLE' ? (
-                    <div className="text-gray-400 font-medium">Connect and start media below to begin the magic.</div>
-                  ) : (
+        {!isOnboarded ? (
+          <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
+            <div className="glass-card rounded-[40px] p-8 shadow-xl bg-white/60 border border-white/50 backdrop-blur-md text-center">
+              <h2 className="text-3xl font-black bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2 mb-2">
+                🔮 Activate the Magic Mirror
+              </h2>
+              <p className="text-gray-600 font-semibold mb-6">
+                Choose Puck's style, then upload a photo of the child to create your unique fairytale hero!
+              </p>
+              
+              {/* Step 1: Character Style */}
+              <div className="mb-6 text-left">
+                <label className="text-xs font-black text-purple-700 uppercase tracking-widest block mb-3">1. Select Puck's Style</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { id: 'elf', icon: '🧚', label: 'Elf', desc: 'Magic Woodland Elf' },
+                    { id: 'wizard', icon: '🪄', label: 'Wizard', desc: 'Young Sorcerer' },
+                    { id: 'royal', icon: '👑', label: 'Royal', desc: 'Prince / Princess' },
+                    { id: 'critter', icon: '🦊', label: 'Critter', desc: 'Fox / Woodland Animal' }
+                  ].map(style => (
+                    <button 
+                      key={style.id}
+                      onClick={() => setCharacterStyle(style.id as any)}
+                      className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center text-center ${characterStyle === style.id ? 'bg-white border-purple-500 shadow-md scale-105' : 'bg-white/40 border-transparent hover:bg-white/60'}`}
+                    >
+                      <span className="text-4xl mb-2">{style.icon}</span>
+                      <span className="text-sm font-black text-purple-950">{style.label}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-1">{style.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 2: Activation */}
+              <div className="border-t border-purple-100 pt-6">
+                {!avatarUrl ? (
+                  // UPLOAD ZONE OR DEFAULT GENERATION
+                  <div className="space-y-6">
+                    <div 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className={`border-4 border-dashed rounded-[30px] p-8 text-center cursor-pointer transition-all ${
+                        isGeneratingAvatar 
+                          ? 'bg-purple-50/20 border-purple-300 pointer-events-none' 
+                          : 'bg-white/40 border-purple-200 hover:border-purple-500 hover:bg-white/60'
+                      }`}
+                    >
+                      {isGeneratingAvatar ? (
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-purple-900 font-extrabold text-lg animate-pulse">🧙‍♂️ Weaving magic details... (Creating character)</p>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-6xl block mb-2 animate-bounce">📸</span>
+                          <span className="font-black text-purple-950 block text-xl mb-1">Upload the Hero's Photo</span>
+                          <span className="text-gray-500 text-sm">We will transform you into the fairytale hero!</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    {!isGeneratingAvatar && (
+                      <>
+                        <div className="text-center text-xs font-black text-gray-400 tracking-wider uppercase">— OR —</div>
+                        <button 
+                          onClick={handleCreateAvatar}
+                          disabled={isGeneratingAvatar}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-4 rounded-2xl transition-all shadow-md active:scale-95 text-md"
+                        >
+                          ✨ Create Default Hero Without Photo
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  // DISPLAY GENERATED HERO + ANIMATION OPTIONS
                   <div className="flex flex-col items-center gap-6">
-                      <div className="w-20 h-20 border-8 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-purple-600 text-xl font-black">Story is active...</p>
+                    <div className="w-72 h-72 rounded-[40px] overflow-hidden border-8 border-purple-300 shadow-2xl bg-white relative animate-in zoom-in-50 duration-500">
+                      {isGeneratingVideo ? (
+                        <div className="absolute inset-0 bg-indigo-950/80 flex flex-col items-center justify-center p-4 text-center text-white z-30">
+                          <div className="w-12 h-12 border-4 border-pink-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+                          <p className="font-extrabold text-sm animate-pulse">🎬 Veo 3.1 is animating Puck...</p>
+                          <p className="text-[10px] text-white/50 mt-1">This will take about 15-20 seconds</p>
+                        </div>
+                      ) : null}
+                      
+                      {videoUrl ? (
+                        <video src={videoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={poseUrl || actionUrl || avatarUrl} className="w-full h-full object-cover" alt="Hero Portrait" />
+                      )}
+                    </div>
+                    
+                    <div className="text-center">
+                      <h3 className="text-2xl font-black text-purple-950">Puck is Awake!</h3>
+                      <p className="text-sm text-gray-500 mt-1">Check out the fairytale look of your hero.</p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isGeneratingAvatar || isGeneratingVideo}
+                        className="flex-1 py-3 px-6 rounded-2xl font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 transition-all border border-indigo-200 text-sm active:scale-95 disabled:opacity-50"
+                      >
+                        🔄 Transform Another Photo
+                      </button>
+                      <button 
+                        onClick={handleAnimatePuck}
+                        disabled={isGeneratingVideo || isGeneratingAvatar}
+                        className="flex-1 py-3 px-6 rounded-2xl font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-md text-sm active:scale-95 disabled:opacity-50"
+                      >
+                        🎬 Animate Puck (Veo 3.1)
+                      </button>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setIsOnboarded(true)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-black text-2xl py-5 rounded-[25px] transition-all shadow-lg hover:scale-[1.02] active:scale-95 mt-4 flex items-center justify-center gap-2"
+                    >
+                      🚀 Enter the Fairytale World
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // STORYTELLING MODE (normal columns)
+          <>
+            <div className="flex-1 flex flex-col gap-6">
+              <div className="glass-card rounded-[40px] overflow-hidden flex-1 shadow-xl flex flex-col relative min-h-[400px] bg-white/60 border border-white/50 backdrop-blur-md">
+                <div className="flex-1 bg-white/20 flex items-center justify-center relative">
+                  {videoUrl ? (
+                    <video src={videoUrl || undefined} autoPlay loop muted playsInline className="w-full h-full object-cover animate-in fade-in duration-1000" />
+                  ) : currentIllustration ? (
+                    <img src={currentIllustration || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Story Scene" />
+                  ) : (actionUrl || avatarUrl) ? (
+                    <img src={actionUrl || avatarUrl || undefined} className="w-full h-full object-cover animate-in fade-in duration-1000" alt="Puck" />
+                  ) : (
+                    <div className="text-center p-12 space-y-6">
+                      {appState === 'IDLE' ? (
+                        <div className="text-gray-400 font-medium">Connect and start media below to begin the magic.</div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-6">
+                          <div className="w-20 h-20 border-8 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-purple-600 text-xl font-black">Story is active...</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {storyChoices.length > 0 && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center p-12 bg-black/30 backdrop-blur-[2px]">
+                      <div className="flex flex-col md:flex-row gap-6 w-full max-w-3xl">
+                        {storyChoices.map((choice, i) => (
+                          <button key={i} onClick={() => selectChoice(choice)} className="flex-1 bg-white/95 hover:bg-yellow-400 hover:scale-105 active:scale-95 transition-all p-8 rounded-3xl shadow-2xl border-4 border-purple-400 text-xl font-black text-purple-900">
+                            {choice}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
-
-              {storyChoices.length > 0 && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center p-12 bg-black/30 backdrop-blur-[2px]">
-                   <div className="flex flex-col md:flex-row gap-6 w-full max-w-3xl">
-                      {storyChoices.map((choice, i) => (
-                        <button key={i} onClick={() => selectChoice(choice)} className="flex-1 bg-white/95 hover:bg-yellow-400 hover:scale-105 active:scale-95 transition-all p-8 rounded-3xl shadow-2xl border-4 border-purple-400 text-xl font-black text-purple-900">
-                          {choice}
-                        </button>
+                <div 
+                  ref={storyContainerRef}
+                  className="bg-white/95 h-48 p-8 border-t border-white/50 backdrop-blur-xl overflow-y-auto scroll-smooth flex-shrink-0"
+                >
+                  {accumulatedStory.length === 0 && !aiTranscription ? (
+                    <p className="text-gray-400 italic text-center text-xl">
+                      {appState === 'STORYTELLING' ? "The magic is unfolding..." : "Your story awaits"}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {accumulatedStory.map((turn, i) => (
+                        <p key={i} className="text-purple-950 text-xl font-medium leading-relaxed italic">
+                          {formatStoryText(turn)}
+                        </p>
                       ))}
-                   </div>
-                </div>
-              )}
-            </div>
-            <div 
-              ref={storyContainerRef}
-              className="bg-white/95 h-48 p-8 border-t border-white/50 backdrop-blur-xl overflow-y-auto scroll-smooth flex-shrink-0"
-            >
-              {accumulatedStory.length === 0 && !aiTranscription ? (
-                <p className="text-gray-400 italic text-center text-xl">
-                  {appState === 'STORYTELLING' ? "The magic is unfolding..." : "Your story awaits"}
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {accumulatedStory.map((turn, i) => (
-                    <p key={i} className="text-purple-950 text-xl font-medium leading-relaxed italic">
-                      {formatStoryText(turn)}
-                    </p>
-                  ))}
-                  {aiTranscription && (
-                    <p className="text-purple-400 text-xl font-medium leading-relaxed italic">
-                      {formatStoryText(aiTranscription)}
-                    </p>
+                      {aiTranscription && (
+                        <p className="text-purple-400 text-xl font-medium leading-relaxed italic">
+                          {formatStoryText(aiTranscription)}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full lg:w-96 flex flex-col gap-6">
-          <div className={`glass-card rounded-[40px] overflow-hidden aspect-square relative shadow-xl bg-indigo-950 border-4 transition-all duration-500 ${isUserSpeaking ? 'border-pink-400 scale-[1.02]' : 'border-white/20'}`}>
-            <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 transition-opacity duration-1000 ${isCameraActive ? 'opacity-80' : 'opacity-0'}`} />
-            
-            {!isCameraActive && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
-                <span className="text-6xl mb-4">📷</span>
-                <span className="font-black text-xs uppercase tracking-tighter">Camera Off</span>
               </div>
-            )}
-            <div className="absolute bottom-6 left-6 bg-black/60 px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md">
-               <div className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-               <span className="text-white text-[12px] font-black tracking-widest uppercase">{isUserSpeaking ? "User Speaking" : "AI Storytelling"}</span>
             </div>
-            
-            {/* Movement Glow Overlay */}
-            {lastMovement && (
-              <div className="absolute inset-0 bg-yellow-400/20 animate-pulse border-8 border-yellow-400 rounded-[40px] pointer-events-none flex items-center justify-center">
-                 <div className="bg-yellow-400 text-purple-900 px-6 py-2 rounded-full font-black text-xl shadow-2xl animate-bounce">
-                    +{lastMovement.energy} ENERGY!
-                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* Heroic Energy Dashboard (Phase 1 Movement Metrics) */}
-          <div className="glass-card rounded-[40px] p-6 shadow-xl bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-black text-orange-800 flex items-center gap-2"><span className="text-2xl">🔥</span> Heroic Energy</h3>
-              <span className="text-2xl font-black text-orange-600">{heroicEnergy}%</span>
-            </div>
-            <div className="w-full bg-orange-200/50 h-6 rounded-full overflow-hidden p-1 border border-orange-200">
-               <div 
-                 className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-1000 ease-out shadow-inner"
-                 style={{ width: `${heroicEnergy}%` }}
-               />
-            </div>
-            <p className="text-[10px] text-orange-700/60 font-bold uppercase tracking-widest mt-3 text-center">Movement is the key to the magic</p>
-          </div>
-
-          <div className="glass-card rounded-[40px] p-6 flex-1 shadow-inner bg-white/60 overflow-y-auto max-h-[300px] border border-white/50 backdrop-blur-md">
-            <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2"><span className="text-2xl">🏺</span> Achievements</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {achievements.map(ach => (
-                <div key={ach.id} className={`p-3 rounded-2xl border-2 transition-all flex flex-col items-center text-center ${ach.unlocked ? 'bg-white border-yellow-300 shadow-md' : 'bg-gray-200/40 border-transparent grayscale opacity-40'}`}>
-                  <span className="text-4xl mb-1">{ach.icon}</span>
-                  <span className="text-[10px] font-black text-gray-800 uppercase tracking-tighter leading-tight">{ach.title}</span>
+            <div className="w-full lg:w-96 flex flex-col gap-6">
+              <div className={`glass-card rounded-[40px] overflow-hidden aspect-square relative shadow-xl bg-indigo-950 border-4 transition-all duration-500 ${isUserSpeaking ? 'border-pink-400 scale-[1.02]' : 'border-white/20'}`}>
+                <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 transition-opacity duration-1000 ${isCameraActive ? 'opacity-80' : 'opacity-0'}`} />
+                
+                {!isCameraActive && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
+                    <span className="text-6xl mb-4">📷</span>
+                    <span className="font-black text-xs uppercase tracking-tighter">Camera Off</span>
+                  </div>
+                )}
+                <div className="absolute bottom-6 left-6 bg-black/60 px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md">
+                  <div className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                  <span className="text-white text-[12px] font-black tracking-widest uppercase">{isUserSpeaking ? "User Speaking" : "AI Storytelling"}</span>
                 </div>
-              ))}
+                
+                {/* Movement Glow Overlay */}
+                {lastMovement && (
+                  <div className="absolute inset-0 bg-yellow-400/20 animate-pulse border-8 border-yellow-400 rounded-[40px] pointer-events-none flex items-center justify-center">
+                    <div className="bg-yellow-400 text-purple-900 px-6 py-2 rounded-full font-black text-xl shadow-2xl animate-bounce">
+                      +{lastMovement.energy} ENERGY!
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Heroic Energy Dashboard (Phase 1 Movement Metrics) */}
+              <div className="glass-card rounded-[40px] p-6 shadow-xl bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-black text-orange-800 flex items-center gap-2"><span className="text-2xl">🔥</span> Heroic Energy</h3>
+                  <span className="text-2xl font-black text-orange-600">{heroicEnergy}%</span>
+                </div>
+                <div className="w-full bg-orange-200/50 h-6 rounded-full overflow-hidden p-1 border border-orange-200">
+                  <div 
+                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-1000 ease-out shadow-inner"
+                    style={{ width: `${heroicEnergy}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-orange-700/60 font-bold uppercase tracking-widest mt-3 text-center">Movement is the key to the magic</p>
+              </div>
+
+              <div className="glass-card rounded-[40px] p-6 flex-1 shadow-inner bg-white/60 overflow-y-auto max-h-[300px] border border-white/50 backdrop-blur-md">
+                <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2"><span className="text-2xl">🏺</span> Achievements</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {achievements.map(ach => (
+                    <div key={ach.id} className={`p-3 rounded-2xl border-2 transition-all flex flex-col items-center text-center ${ach.unlocked ? 'bg-white border-yellow-300 shadow-md' : 'bg-gray-200/40 border-transparent grayscale opacity-40'}`}>
+                      <span className="text-4xl mb-1">{ach.icon}</span>
+                      <span className="text-[10px] font-black text-gray-800 uppercase tracking-tighter leading-tight">{ach.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </main>
 
       {/* --- DEVELOPER CONTROL CENTER (The Google UI you requested) --- */}
-      <section className="w-full max-w-7xl bg-white/80 backdrop-blur-xl border-2 border-purple-100 shadow-2xl rounded-[40px] p-8 z-10 flex flex-col lg:flex-row gap-8">
-        
-        {/* Connection & Media Settings */}
-        <div className="flex-1 flex flex-col gap-6">
-            {/* Mode Selector */}
-            <ModeSelector
-              selected={storyMode}
-              onChange={setStoryMode}
-              disabled={connectionStatus === 'Connected' || isAgentLoading}
-            />
+      {isOnboarded && (
+        <section className="w-full max-w-7xl bg-white/80 backdrop-blur-xl border-2 border-purple-100 shadow-2xl rounded-[40px] p-8 z-10 flex flex-col lg:flex-row gap-8 animate-in slide-in-from-bottom-8 duration-500">
+          {/* Connection & Media Settings */}
+          <div className="flex-1 flex flex-col gap-6">
+              {/* Mode Selector */}
+              <ModeSelector
+                selected={storyMode}
+                onChange={setStoryMode}
+                disabled={connectionStatus === 'Connected' || isAgentLoading}
+              />
 
-            {/* Exercise Selector */}
-            <ExerciseModeSelector
-              selected={exerciseMode}
-              onChange={setExerciseMode}
-              disabled={connectionStatus === 'Connected'}
-            />
+              {/* Exercise Selector */}
+              <ExerciseModeSelector
+                selected={exerciseMode}
+                onChange={setExerciseMode}
+                disabled={connectionStatus === 'Connected'}
+              />
 
-            {/* Agent Mode: Loading / Ready state */}
-            {storyMode === 'agent' && (
-              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
-                {isAgentLoading && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                    <p className="text-sm font-medium text-blue-700">{agentProgress || 'Preparing story...'}</p>
-                  </div>
-                )}
-                {!isAgentLoading && storyText && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-bold text-green-700 flex items-center gap-2">✨ Story ready!</p>
-                    <p className="text-xs text-gray-600 line-clamp-3 italic">{storyText.slice(0, 180)}...</p>
-                    <button
-                      onClick={connect}
-                      disabled={connectionStatus === 'Connected'}
-                      className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
-                    >
-                      🧚 Wake Puck!
-                    </button>
-                  </div>
-                )}
-                {!isAgentLoading && agentError && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-bold text-red-600">⚠️ {agentError}</p>
-                    <button onClick={() => fetchStory()} className="text-xs text-blue-600 underline">Try again</button>
-                  </div>
-                )}
-                {!isAgentLoading && !storyText && !agentError && (
-                  <button
-                    onClick={() => fetchStory()}
-                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md"
-                  >
-                    🚀 Generate Story with Agents
-                  </button>
-                )}
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
-              <div className="flex gap-3 mb-4">
-                  {/* Live Mode: direct connect. Agent Mode: show Wake Puck above, only Disconnect here */}
-                  {/* Use a single set of logic for connection buttons, but keep the special 'Wake Puck' for agent mode ready state */}
-                  {connectionStatus !== 'Connected' ? (
-                    storyMode === 'live' && (
-                      <button onClick={connect} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all">Connect API</button>
-                    )
-                  ) : (
-                    <button onClick={disconnect} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all">Disconnect</button>
+              {/* Agent Mode: Loading / Ready state */}
+              {storyMode === 'agent' && (
+                <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
+                  {isAgentLoading && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                      <p className="text-sm font-medium text-blue-700">{agentProgress || 'Preparing story...'}</p>
+                    </div>
                   )}
+                  {!isAgentLoading && storyText && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-bold text-green-700 flex items-center gap-2">✨ Story ready!</p>
+                      <p className="text-xs text-gray-600 line-clamp-3 italic">{storyText.slice(0, 180)}...</p>
+                      <button
+                        onClick={connect}
+                        disabled={connectionStatus === 'Connected'}
+                        className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
+                      >
+                        🧚 Wake Puck!
+                      </button>
+                    </div>
+                  )}
+                  {!isAgentLoading && agentError && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-bold text-red-600">⚠️ {agentError}</p>
+                      <button onClick={() => fetchStory()} className="text-xs text-blue-600 underline">Try again</button>
+                    </div>
+                  )}
+                  {!isAgentLoading && !storyText && !agentError && (
+                    <button
+                      onClick={() => fetchStory()}
+                      className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md"
+                    >
+                      🚀 Generate Story with Agents
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">🔌 Connection</h3>
+                <div className="flex gap-3 mb-4">
+                    {connectionStatus !== 'Connected' ? (
+                      storyMode === 'live' && (
+                        <button onClick={connect} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl font-bold transition-all">Connect API</button>
+                      )
+                    ) : (
+                      <button onClick={disconnect} className="bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-xl font-bold transition-all">Disconnect</button>
+                    )}
+                </div>
+                <div className="text-sm font-medium text-gray-600">
+                    Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
+                </div>
               </div>
-              <div className="text-sm font-medium text-gray-600">
-                  Status: <span className={connectionStatus === 'Connected' ? 'text-green-600 font-bold' : 'text-purple-600 font-bold'}>{connectionStatus}</span>
+
+              {/* --- AUDIO CONTROLS --- */}
+              <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                  <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">Microphone</label>
+                      <select className="w-full border border-gray-200 rounded-lg p-2 bg-white text-sm" value={selectedMic} onChange={e => setSelectedMic(e.target.value)}>
+                          <option value="">Default Microphone</option>
+                          {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
+                      </select>
+                  </div>
+                  <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">Camera</label>
+                      <select className="w-full border border-gray-200 rounded-lg p-2 bg-white text-sm" value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)}>
+                          <option value="">Default Camera</option>
+                          {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
+                      </select>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                      <button onClick={toggleAudio} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${isAudioOn ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
+                          {isAudioOn ? 'Stop Audio' : 'Start Audio'}
+                      </button>
+                      <button onClick={toggleVideo} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${isVideoOn ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
+                          {isVideoOn ? 'Stop Video' : 'Start Video'}
+                      </button>
+                  </div>
               </div>
           </div>
 
-            {/* --- AUDIO CONTROLS --- */}
-            <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Microphone</label>
-                    <select className="w-full border border-gray-200 rounded-lg p-2 bg-white text-sm" value={selectedMic} onChange={e => setSelectedMic(e.target.value)}>
-                        <option value="">Default Microphone</option>
-                        {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Camera</label>
-                    <select className="w-full border border-gray-200 rounded-lg p-2 bg-white text-sm" value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)}>
-                        <option value="">Default Camera</option>
-                        {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
-                    </select>
-                </div>
-                <div className="flex gap-3 pt-2">
-                    <button onClick={toggleAudio} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${isAudioOn ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                        {isAudioOn ? 'Stop Audio' : 'Start Audio'}
-                    </button>
-                    <button onClick={toggleVideo} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${isVideoOn ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                        {isVideoOn ? 'Stop Video' : 'Start Video'}
-                    </button>
-                </div>
-            </div>
+          {/* Chat Logs & Debug Console */}
+          <div className="flex-1 flex flex-col gap-6">
+              <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">💬 Chat Logs</h3>
+                  <div ref={chatContainerRef} className="border border-gray-200 bg-white rounded-xl h-[180px] overflow-y-auto p-4 space-y-2 shadow-inner text-sm">
+                      {chatMessages.length === 0 && <div className="text-gray-400 italic">Connect to Gemini to start chatting...</div>}
+                      {chatMessages.map((msg, i) => (
+                          <div key={i} className="leading-tight">
+                              <span className={`font-black text-[10px] px-2 py-0.5 mr-2 rounded text-white uppercase tracking-wider ${
+                                  msg.sender === 'SYSTEM' ? 'bg-red-500' : msg.sender === 'GEMINI' ? 'bg-blue-500' : 'bg-green-500'
+                              }`}>{msg.sender}</span>
+                              <span className={msg.type === 'transcript' ? 'italic text-gray-600' : 'text-gray-800 font-medium'}>{msg.text}</span>
+                          </div>
+                      ))}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                      <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendText()} placeholder="Type message to Gemini..." className="flex-1 border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-purple-400" />
+                      <button onClick={sendText} className="bg-gray-800 text-white px-4 rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors">Send</button>
+                  </div>
+              </div>
 
-            {/* <div className="bg-yellow-50/50 p-4 rounded-2xl border border-yellow-100">
-                <h4 className="text-xs font-bold text-yellow-700 uppercase mb-3">🛠️ Simulate Tools (Debug)</h4>
-                <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => handleAwardBadge('bunny_hop')} className="bg-white border border-yellow-200 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-100 transition-all">Test 🐰 Badge</button>
-                    <button onClick={() => handleAwardBadge('wizard_wave')} className="bg-white border border-yellow-200 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-100 transition-all">Test 🪄 Badge</button>
-                    <button onClick={() => setStoryChoices(['Go to Cave', 'Stay at Camp'])} className="bg-white border border-yellow-200 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-100 transition-all col-span-2">Test Choices UI</button>
-                </div>
-            </div> */}
-        </div>
-
-        {/* Puck's Appearance Workshop & Chat Logs */}
-        <div className="flex-1 flex flex-col gap-6">
-            <div className="bg-purple-50/50 p-6 rounded-[30px] border-2 border-purple-200">
-                <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2">🧚 Customize Puck</h3>
-                <div className="space-y-4">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-purple-600 uppercase">Puck's Appearance</label>
-                        <input 
-                            type="text" 
-                            value={characterDescription} 
-                            onChange={e => setCharacterDescription(e.target.value)}
-                            placeholder="e.g. a small woodland elf with translucent wings..." 
-                            className="bg-white border border-purple-200 rounded-xl p-3 text-sm focus:border-purple-500 outline-none"
-                        />
-                        <button 
-                            onClick={handleCreateAvatar}
-                            disabled={isGeneratingAvatar}
-                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-md transition-all ${isGeneratingAvatar ? 'bg-purple-200 text-purple-400' : 'bg-purple-600 text-white hover:bg-purple-700 active:scale-95'}`}
-                        >
-                            {isGeneratingAvatar ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                                    Painting Puck...
-                                </span>
-                            ) : "🎨 Bring Puck to Life"}
-                        </button>
-                        
-                        <div className="flex gap-2">
-                           <button 
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={isGeneratingAvatar}
-                              className="flex-1 py-2 rounded-xl font-bold text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-all border border-indigo-200"
-                           >
-                              📂 Upload Photo
-                           </button>
-                           <input 
-                              type="file" 
-                              ref={fileInputRef} 
-                              className="hidden" 
-                              accept="image/*" 
-                              onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} 
-                           />
-                        </div>
-                    </div>
-
-                    {avatarUrl && (
-                        <div className="pt-4 border-t border-purple-100 animate-in slide-in-from-top-4">
-                            <div className="mb-4 rounded-2xl overflow-hidden border-2 border-purple-200 shadow-sm aspect-square bg-white">
-                                <img src={poseUrl || actionUrl || avatarUrl || undefined} alt="Avatar Preview" className="w-full h-full object-cover" />
-                            </div>
-                            <label className="text-xs font-bold text-purple-600 uppercase mb-2 block">Action (Maintaining Puck's look)</label>
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={() => handleGenerateAction("the character is casting a magic spell with a wooden wand")}
-                                    disabled={isGeneratingAction}
-                                    className="flex-1 bg-white border border-purple-200 py-3 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all disabled:opacity-50"
-                                >
-                                    🪄 Cast Magic
-                                </button>
-                                <button 
-                                    onClick={() => handleGenerateAction("the character is running through a field of flowers")}
-                                    disabled={isGeneratingAction}
-                                    className="flex-1 bg-white border border-purple-200 py-3 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all disabled:opacity-50"
-                                >
-                                    🏃 Run in Field
-                                </button>
-                            </div>
-                            <label className="text-xs font-bold text-purple-600 uppercase mb-2 block mt-3">360° View (Character Angles)</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button 
-                                    onClick={() => handleGeneratePose("in profile looking right")}
-                                    disabled={isGeneratingPose}
-                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
-                                >
-                                    👈 Profile Right
-                                </button>
-                                <button 
-                                    onClick={() => handleGeneratePose("in profile looking left")}
-                                    disabled={isGeneratingPose}
-                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
-                                >
-                                    👉 Profile Left
-                                </button>
-                                <button 
-                                    onClick={() => handleGeneratePose("from behind, looking over the shoulder")}
-                                    disabled={isGeneratingPose}
-                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
-                                >
-                                    🔄 From Behind
-                                </button>
-                                <button 
-                                    onClick={() => handleGeneratePose("three-quarter view from above")}
-                                    disabled={isGeneratingPose}
-                                    className="bg-white border border-indigo-200 py-2 rounded-xl text-[11px] font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
-                                >
-                                    ⬆️ Bird's Eye
-                                </button>
-                            </div>
-                            <button 
-                                onClick={handleAnimatePuck}
-                                disabled={isGeneratingVideo}
-                                className={`w-full mt-3 py-3 rounded-xl font-bold text-sm shadow-md transition-all ${isGeneratingVideo ? 'bg-indigo-200 text-indigo-400' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 active:scale-95'}`}
-                            >
-                                {isGeneratingVideo ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                                        Veo is animating Puck...
-                                    </span>
-                                ) : "✨ Bring Puck to Life (Animate Video)"}
-                            </button>
-                            {(isGeneratingAction || isGeneratingPose) && (
-                                <p className="text-[10px] text-purple-500 mt-2 text-center animate-pulse">Gemini is rendering...</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">💬 Chat Logs</h3>
-                <div ref={chatContainerRef} className="border border-gray-200 bg-white rounded-xl h-[180px] overflow-y-auto p-4 space-y-2 shadow-inner text-sm">
-                    {chatMessages.length === 0 && <div className="text-gray-400 italic">Connect to Gemini to start chatting...</div>}
-                    {chatMessages.map((msg, i) => (
-                        <div key={i} className="leading-tight">
-                            <span className={`font-black text-[10px] px-2 py-0.5 mr-2 rounded text-white uppercase tracking-wider ${
-                                msg.sender === 'SYSTEM' ? 'bg-red-500' : msg.sender === 'GEMINI' ? 'bg-blue-500' : 'bg-green-500'
-                            }`}>{msg.sender}</span>
-                            <span className={msg.type === 'transcript' ? 'italic text-gray-600' : 'text-gray-800 font-medium'}>{msg.text}</span>
-                        </div>
-                    ))}
-                </div>
-                <div className="flex gap-2 mt-2">
-                    <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendText()} placeholder="Type message to Gemini..." className="flex-1 border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-purple-400" />
-                    <button onClick={sendText} className="bg-gray-800 text-white px-4 rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors">Send</button>
-                </div>
-            </div>
-
-            <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">🐛 Debug Console</h3>
-                <pre className="border border-gray-200 bg-gray-900 text-green-400 rounded-xl h-[120px] overflow-y-auto p-4 text-[11px] font-mono shadow-inner whitespace-pre-wrap">
-                    {debugInfo}
-                </pre>
-            </div>
-        </div>
-      </section>
+              <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">🐛 Debug Console</h3>
+                  <pre className="border border-gray-200 bg-gray-900 text-green-400 rounded-xl h-[120px] overflow-y-auto p-4 text-[11px] font-mono shadow-inner whitespace-pre-wrap">
+                      {debugInfo}
+                  </pre>
+              </div>
+          </div>
+        </section>
+      )}
 
     </div>
   );

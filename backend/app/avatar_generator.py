@@ -39,11 +39,15 @@ class StoryAvatarGenerator:
         if not self.project_id:
             logger.warning("GOOGLE_CLOUD_PROJECT not set. Vertex AI may fail.")
 
-        self.client = genai.Client(
-            vertexai=True,
-            project=self.project_id,
-            location=self.location
-        )
+        use_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "true").lower() in ("true", "1", "yes")
+        if use_vertex:
+            self.client = genai.Client(
+                vertexai=True,
+                project=self.project_id,
+                location=self.location
+            )
+        else:
+            self.client = genai.Client()
 
         # Initialize model and create separate chat sessions for different use cases
         image_model = os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview")
@@ -78,6 +82,8 @@ class StoryAvatarGenerator:
         
         # Initialize music generator
         self.music_gen = MusicGenerator(project_id=self.project_id, location=self.location)
+        self.latest_portrait_path = None
+        self.latest_character_description = None
 
     def generate_scene_illustration(self, scene_description: str) -> str:
         """
@@ -104,8 +110,8 @@ If the scene mentions specific real-world locations, landmarks, plants, animals,
 use Google Search to ensure accurate visual details while maintaining the magical fairytale style.
 
 CRITICAL STYLE REQUIREMENTS:
-- Art style: Watercolor, whimsical children's book illustration
-- Soft textures, gentle brushstrokes, and a warm, magical color palette
+- Art style: Cinematic live-action fantasy film style, highly detailed, realistic, photorealistic
+- Real textures, atmospheric depth, rich cinematic color palette
 - Composition: Full landscape scene with atmospheric depth
 - Lighting: Magical, atmospheric lighting with enchanting glows
 - Feel: Enchanting and safe for children - no dark or scary elements
@@ -170,8 +176,8 @@ The illustration should:
 Character appearance (this is Puck, our magical narrator): {appearance_description}
 
 CRITICAL STYLE REQUIREMENTS:
-- Art style: Watercolor, whimsical children's book illustration
-- Soft textures, gentle brushstrokes, and a warm color palette
+- Art style: Cinematic live-action fantasy film style, highly detailed, realistic, photorealistic
+- Real skin textures, detailed eyes, realistic hair, photoreal physics
 - Background: Pure solid white (#FFFFFF) - absolutely no gradients or patterns
 - Frame: Head and shoulders only, facing the viewer
 - Lighting: Soft, magical glow, no harsh shadows
@@ -188,6 +194,8 @@ The white background is essential for character compositing."""
             raise Exception("Failed to generate portrait - no image in response")
         
         logger.info(f"✓ Portrait generated at {portrait_path}")
+        self.latest_portrait_path = portrait_path
+        self.latest_character_description = self._describe_image(portrait_path)
         return portrait_path
 
     def generate_avatar_from_photo(self, photo_bytes: bytes, appearance_description: str) -> str:
@@ -228,8 +236,8 @@ PRESERVE EXACTLY from the original photo:
 The illustration MUST be immediately recognizable as THIS specific person.
 
 TRANSFORM with style:
-- Art style: Watercolor, whimsical children's book illustration (Pixar/Dreamworks level)
-- Soft textures, gentle brushstrokes, and a warm magical color palette
+- Art style: Cinematic live-action fantasy film style, highly detailed, realistic, photorealistic
+- Real skin textures, detailed eyes, realistic hair, photoreal physics
 - Background: Pure solid white (#FFFFFF) - no gradients or patterns
 - Frame: Head and shoulders, 3/4 view
 - Lighting: Soft, magical glow, no harsh shadows
@@ -251,6 +259,8 @@ QUALITY CHECK: Person must be CLEARLY recognizable while being stunningly illust
             raise Exception("Failed to transform photo - no image in response")
         
         logger.info(f"✓ Photo-based portrait generated at {portrait_path}")
+        self.latest_portrait_path = portrait_path
+        self.latest_character_description = self._describe_image(portrait_path)
         return portrait_path
 
     def generate_consistent_action(self, action_description: str) -> str:
@@ -271,8 +281,8 @@ CRITICAL REQUIREMENTS:
 - SAME Puck, SAME face, SAME features, SAME magical elements — maintain perfect consistency
 - Full body or 3/4 view to show the action
 - Background: Pure solid white (#FFFFFF)
-- Art style: EXACTLY the same watercolor, whimsical children's book style
-- Maintain the same colors, lighting, and magical feel
+- Art style: EXACTLY the same cinematic live-action fantasy film style, photorealistic, highly detailed
+- Maintain the same realistic skin, hair, lighting, and magical feel
 
 The character must be immediately recognizable as the same person from the portrait."""
 
@@ -285,6 +295,8 @@ The character must be immediately recognizable as the same person from the portr
             raise Exception("Failed to generate action image - no image in response")
         
         logger.info(f"✓ Action image generated at {action_path}")
+        self.latest_portrait_path = action_path
+        self.latest_character_description = self._describe_image(action_path)
         return action_path
 
     def generate_avatar_pose(self, pose_description: str) -> str:
@@ -319,7 +331,7 @@ CRITICAL REQUIREMENTS:
 - Maintain all distinctive characteristics from previous images
 - New angle/pose while showing recognizable personality
 - Background: Pure solid white (#FFFFFF)
-- Art style: EXACTLY the same watercolor, whimsical children's book style
+- Art style: EXACTLY the same cinematic live-action fantasy film style, photorealistic, highly detailed
 - Lighting: Soft, magical glow consistent with previous portraits
 
 The character must be IMMEDIATELY recognizable from any angle."""
@@ -333,24 +345,59 @@ The character must be IMMEDIATELY recognizable from any angle."""
             raise Exception("Failed to generate pose image - no image in response")
         
         logger.info(f"✓ Character pose generated at {pose_path}")
+        self.latest_portrait_path = pose_path
+        self.latest_character_description = self._describe_image(pose_path)
         return pose_path
+
+    def _describe_image(self, image_path: str) -> str:
+        """
+        Uses Gemini Flash to describe the character in the image in one sentence.
+        """
+        if not os.path.exists(image_path):
+            return ""
+        try:
+            logger.info(f"Analyzing generated image to get description: {image_path}")
+            image = Image.open(image_path)
+            
+            prompt = """Describe the character in this image in one simple sentence for an image-to-video generation prompt (e.g., 'A young girl with brown pigtails in a green sweater' or 'A cute fluffy orange fox with a green bag'). Focus only on the character's main visual traits (face, hair, clothes). Do not mention the background or art style. Only return the sentence, nothing else."""
+            
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[prompt, image]
+            )
+            desc = response.text.strip()
+            logger.info(f"Generated character description: {desc}")
+            return desc
+        except Exception as e:
+            logger.warning(f"Failed to describe image: {e}")
+            return ""
 
     def generate_animated_puck(self, appearance_description: str) -> str:
         """
         Generates a 4-second video of Puck using Veo 3.1.
         """
+        char_desc = self.latest_character_description or appearance_description
         prompt = f"""A magical fairytale animation of Puck. 
-        Appearance: {appearance_description}.
+        Appearance: {char_desc}.
         Puck is floating in a magical forest, blinking and smiling, with translucent wings gently fluttering. 
-        Art style: Watercolor whimsical children's book illustration.
+        Art style: Cinematic live-action fantasy film style, photorealistic, highly detailed, realistic textures and physics.
         Slow, gentle movement, magical atmosphere."""
 
         logger.info(f"🌿 Animating Puck with Veo 3.1: {appearance_description}...")
         
+        input_image = None
+        if self.latest_portrait_path and os.path.exists(self.latest_portrait_path):
+            try:
+                input_image = Image.open(self.latest_portrait_path)
+                logger.info(f"Using latest portrait as input frame for video: {self.latest_portrait_path}")
+            except Exception as e:
+                logger.warning(f"Could not load latest portrait for video generation: {e}")
+
         video_model = os.getenv("VIDEO_MODEL_ID", "veo-3.1-generate-preview")
         operation = self.client.models.generate_videos(
             model=video_model,
             prompt=prompt,
+            image=input_image,
             config=types.GenerateVideosConfig(
                 aspect_ratio="16:9",
                 resolution="720p",
@@ -368,6 +415,7 @@ The character must be IMMEDIATELY recognizable from any angle."""
             raise Exception("Failed to generate animation - no video in response")
 
         generated_video = operation.response.generated_videos[0]
+        self.client.files.download(file=generated_video.video)
         filename = f"puck_anim_{uuid.uuid4().hex[:8]}.mp4"
         video_path = os.path.join(self.output_dir, filename)
         generated_video.video.save(video_path)
