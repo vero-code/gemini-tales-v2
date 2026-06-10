@@ -51,10 +51,10 @@ const modes: {
 export const ModeSelector: React.FC<ModeSelectorProps> = ({ selected, onChange, disabled }) => {
   return (
     <div className="w-full">
-      <p className="text-center text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">
+      <p className="text-center text-[10px] font-black text-purple-800 uppercase tracking-widest mb-3">
         Choose Story Mode
       </p>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex flex-col gap-3">
         {modes.map((mode) => {
           const isSelected = selected === mode.id;
           return (
@@ -83,20 +83,20 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ selected, onChange, 
               <div className="flex items-start gap-3 mb-2">
                 <span className="text-2xl">{mode.emoji}</span>
                 <div>
-                  <div className="font-bold text-gray-900 text-base leading-tight">{mode.title}</div>
-                  <div className="text-xs text-gray-500">{mode.subtitle}</div>
+                  <div className="font-bold text-purple-950 text-base leading-tight">{mode.title}</div>
+                  <div className="text-xs text-purple-800/80 font-bold">{mode.subtitle}</div>
                 </div>
               </div>
 
-              <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2 ${mode.badgeColor}`}>
+              <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full mb-2 ${mode.badgeColor}`}>
                 {mode.badge}
               </span>
 
-              <p className="text-xs text-gray-600 leading-relaxed mb-2">{mode.description}</p>
+              <p className="text-xs text-purple-900/90 leading-relaxed mb-2 font-medium">{mode.description}</p>
 
               <ul className="space-y-1">
                 {mode.bullets.map((b, i) => (
-                  <li key={i} className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <li key={i} className="flex items-center gap-1.5 text-xs text-purple-950/85 font-semibold">
                     <span className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${mode.gradient} flex-shrink-0`} />
                     {b}
                   </li>

@@ -1,5 +1,5 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Quicksand', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -28,6 +28,11 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  font-family: 'Quicksand', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+button, input, select, textarea {
+  font-family: 'Quicksand', system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 }
 
 h1 {

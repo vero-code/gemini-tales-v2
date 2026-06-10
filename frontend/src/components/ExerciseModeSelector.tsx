@@ -59,11 +59,11 @@ const modes: {
 
 export const ExerciseModeSelector: React.FC<ExerciseModeSelectorProps> = ({ selected, onChange, disabled }) => {
   return (
-    <div className="w-full mt-6">
-      <p className="text-center text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">
+    <div className="w-full">
+      <p className="text-center text-[10px] font-black text-purple-800 uppercase tracking-widest mb-3">
         Choose Exercise Focus
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-3">
         {modes.map((mode) => {
           const isSelected = selected === mode.id;
           return (
@@ -72,7 +72,7 @@ export const ExerciseModeSelector: React.FC<ExerciseModeSelectorProps> = ({ sele
               onClick={() => !disabled && onChange(mode.id)}
               disabled={disabled}
               className={`
-                relative text-left p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center text-center
+                relative text-left p-4 rounded-2xl border-2 transition-all duration-200 w-full
                 ${isSelected
                   ? `${mode.border} ${mode.selectedBg} shadow-lg scale-[1.02]`
                   : 'border-gray-200 bg-white/60 hover:border-gray-300 hover:bg-white/80 hover:scale-[1.01]'
@@ -81,18 +81,25 @@ export const ExerciseModeSelector: React.FC<ExerciseModeSelectorProps> = ({ sele
               `}
             >
               {isSelected && (
-                <span className={`absolute top-2 right-2 w-4 h-4 rounded-full bg-gradient-to-br ${mode.gradient} flex items-center justify-center`}>
+                <span className={`absolute top-3 right-3 w-4 h-4 rounded-full bg-gradient-to-br ${mode.gradient} flex items-center justify-center`}>
                   <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </span>
               )}
-              <span className="text-3xl mb-1">{mode.emoji}</span>
-              <div className="font-bold text-gray-900 text-sm">{mode.title}</div>
-              <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1 mb-2 ${mode.badgeColor}`}>
-                {mode.badge}
-              </span>
-              <p className="text-[11px] text-gray-600 leading-tight">{mode.description}</p>
+
+              <div className="flex items-start gap-3">
+                <span className="text-3xl flex-shrink-0">{mode.emoji}</span>
+                <div className="flex-1 pr-4">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-bold text-purple-950 text-sm leading-none">{mode.title}</span>
+                    <span className={`text-[9px] font-black tracking-wide uppercase px-2 py-0.5 rounded-full leading-none ${mode.badgeColor}`}>
+                      {mode.badge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-purple-900/90 leading-snug font-medium">{mode.description}</p>
+                </div>
+              </div>
             </button>
           );
         })}

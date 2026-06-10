@@ -124,6 +124,7 @@ const App: React.FC = () => {
   const [selectedMic, setSelectedMic] = useState('');
   const [selectedCamera, setSelectedCamera] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [isAudioOn, setIsAudioOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [chatMessages, setChatMessages] = useState<{sender: string, text: string, type: string}[]>([]);
@@ -771,7 +772,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2] font-sans">
+    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2]">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -831,12 +832,12 @@ const App: React.FC = () => {
       )}
 
       {/* --- HEADER --- */}
-      <header className="z-50 w-full max-w-7xl relative flex flex-col md:flex-row items-center justify-between gap-4 border-b border-purple-100 pb-4">
+      <header className="z-50 w-full max-w-[1600px] relative flex flex-col md:flex-row items-center justify-between gap-4 border-b border-purple-100 pb-4">
         <div className="flex flex-col md:flex-row items-baseline gap-2 md:gap-4 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent tracking-tight">
             Gemini Tales
           </h1>
-          <p className="text-sm md:text-base text-gray-500 font-medium italic">
+          <p className="text-sm md:text-base text-purple-900/90 font-semibold italic">
             A magical world where stories come to life!
           </p>
         </div>
@@ -951,7 +952,7 @@ const App: React.FC = () => {
                   </div>
                   
                   {connectionStatus !== 'Connected' && (
-                    <p className="text-[10px] text-gray-400 italic text-center mt-1">
+                    <p className="text-[10px] text-purple-800/90 italic font-bold text-center mt-1">
                       * Connect API to enable microphone and camera streaming.
                     </p>
                   )}
@@ -960,23 +961,57 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* GitHub Star link */}
+          {/* Debug Console toggle button */}
+          <div className="relative z-50">
+            <button
+              onClick={() => setIsDebugOpen(!isDebugOpen)}
+              className={`p-2 rounded-full border border-gray-200 bg-white/80 hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all shadow-sm flex items-center justify-center ${
+                isDebugOpen ? 'bg-purple-100 border-purple-300 text-purple-700' : ''
+              }`}
+              title="Debug Console"
+              style={{ width: '36px', height: '36px' }}
+            >
+              <span className="text-lg">🐛</span>
+            </button>
+
+            {isDebugOpen && (
+              <div className="absolute right-0 top-full mt-2.5 w-[500px] max-w-[90vw] bg-white/95 backdrop-blur-xl border border-purple-100 rounded-3xl shadow-2xl p-6 z-50 animate-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center justify-between mb-4 border-b border-purple-50 pb-2">
+                  <h3 className="font-black text-purple-950 text-md flex items-center gap-2">
+                    🐛 Debug Console
+                  </h3>
+                  <button 
+                    onClick={() => setIsDebugOpen(false)}
+                    className="text-xs font-bold text-purple-600 hover:text-purple-800"
+                  >
+                    Close
+                  </button>
+                </div>
+                <pre className="border border-purple-100 bg-purple-950/90 text-green-400 rounded-2xl h-[300px] overflow-y-auto p-4 text-[11px] font-mono shadow-inner whitespace-pre-wrap text-left">
+                  {debugInfo}
+                </pre>
+              </div>
+            )}
+          </div>
+
+          {/* GitHub Repository link */}
           <a 
             href="https://github.com/vero-code/gemini-tales" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full text-gray-700 font-bold text-xs hover:shadow-md hover:border-purple-300 transition-all group"
+            className="p-2 rounded-full border border-gray-200 bg-white/80 hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all shadow-sm flex items-center justify-center group"
+            title="GitHub Repository"
+            style={{ width: '36px', height: '36px' }}
           >
-            <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" aria-hidden="true" className="fill-current text-gray-600 group-hover:text-purple-600 transition-colors">
+            <svg height="18" viewBox="0 0 16 16" version="1.1" width="18" aria-hidden="true" className="fill-current text-gray-600 group-hover:text-purple-600 transition-colors">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
             </svg>
-            <span>Star</span>
           </a>
         </div>
       </header>
 
       {/* --- MAIN STORY EXPERIENCE (Beautiful UI) --- */}
-      <main className="w-full max-w-7xl flex flex-col lg:flex-row gap-8">
+      <main className="w-full max-w-[1600px] flex-1 flex flex-col lg:flex-row gap-8">
         {!isOnboarded ? (
           <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
             <div className="glass-card rounded-[40px] p-8 shadow-xl bg-white/60 border border-white/50 backdrop-blur-md text-center">
@@ -987,7 +1022,7 @@ const App: React.FC = () => {
                   <h2 className="text-3xl font-black bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2 mb-2">
                     🔮 Step 1 of 3: Activate the Magic Mirror
                   </h2>
-                  <p className="text-gray-600 font-semibold mb-6">
+                  <p className="text-purple-900/90 font-bold mb-6">
                     Choose Puck's style, then upload a photo of the child to create your unique fairytale hero!
                   </p>
                 </>
@@ -1008,7 +1043,7 @@ const App: React.FC = () => {
                     </h2>
                     <div className="w-16"></div> {/* Spacer for center alignment */}
                   </div>
-                  <p className="text-gray-600 font-semibold mb-6">
+                  <p className="text-purple-900/90 font-bold mb-6">
                     Watch Puck wake up and smile in the magic mirror!
                   </p>
                 </>
@@ -1029,7 +1064,7 @@ const App: React.FC = () => {
                     </h2>
                     <div className="w-16"></div> {/* Spacer for center alignment */}
                   </div>
-                  <p className="text-gray-600 font-semibold mb-6">
+                  <p className="text-purple-900/90 font-bold mb-6">
                     Compose a custom magical tune inspired by your hero's appearance.
                   </p>
                 </>
@@ -1053,7 +1088,7 @@ const App: React.FC = () => {
                       >
                         <span className="text-4xl mb-2">{style.icon}</span>
                         <span className="text-sm font-black text-purple-950">{style.label}</span>
-                        <span className="text-[10px] text-gray-500 leading-tight mt-1">{style.desc}</span>
+                        <span className="text-[10px] text-purple-900/85 font-bold leading-tight mt-1">{style.desc}</span>
                       </button>
                     ))}
                   </div>
@@ -1082,14 +1117,14 @@ const App: React.FC = () => {
                         <>
                           <span className="text-6xl block mb-2 animate-bounce">📸</span>
                           <span className="font-black text-purple-950 block text-xl mb-1">Upload the Hero's Photo</span>
-                          <span className="text-gray-500 text-sm">We will transform you into the fairytale hero!</span>
+                          <span className="text-purple-900/85 text-sm font-bold">We will transform you into the fairytale hero!</span>
                         </>
                       )}
                     </div>
                     
                     {!isGeneratingAvatar && (
                       <>
-                        <div className="text-center text-xs font-black text-gray-400 tracking-wider uppercase">— OR —</div>
+                        <div className="text-center text-xs font-black text-purple-800/60 tracking-wider uppercase">— OR —</div>
                         <button 
                           onClick={handleCreateAvatar}
                           disabled={isGeneratingAvatar}
@@ -1108,7 +1143,7 @@ const App: React.FC = () => {
                         <div className="absolute inset-0 bg-indigo-950/80 flex flex-col items-center justify-center p-4 text-center text-white z-30">
                           <div className="w-12 h-12 border-4 border-pink-400 border-t-transparent rounded-full animate-spin mb-4"></div>
                           <p className="font-extrabold text-sm animate-pulse">🎬 Veo 3.1 is animating Puck...</p>
-                          <p className="text-[10px] text-white/50 mt-1">This will take about 15-20 seconds</p>
+                          <p className="text-[10px] text-white/80 mt-1">This will take about 15-20 seconds</p>
                         </div>
                       ) : null}
                       
@@ -1121,7 +1156,7 @@ const App: React.FC = () => {
                     
                     <div className="text-center">
                       <h3 className="text-2xl font-black text-purple-950">Puck is Awake!</h3>
-                      <p className="text-sm text-gray-500 mt-1">Check out the fairytale look of your hero.</p>
+                      <p className="text-sm text-purple-900/85 font-semibold mt-1">Check out the fairytale look of your hero.</p>
                     </div>
 
                     {!videoUrl ? (
@@ -1157,7 +1192,7 @@ const App: React.FC = () => {
                             >
                               <span className="text-3xl mb-1">{theme.icon}</span>
                               <span className="text-sm font-black text-purple-950">{theme.label}</span>
-                              <span className="text-[10px] text-gray-500 leading-tight mt-1">{theme.desc}</span>
+                              <span className="text-[10px] text-purple-900/85 font-bold leading-tight mt-1">{theme.desc}</span>
                             </button>
                           ))}
                         </div>
@@ -1179,7 +1214,7 @@ const App: React.FC = () => {
                           <span className="text-3xl animate-pulse">🎵</span>
                           <div>
                             <p className="font-black text-purple-950 text-sm">Theme Song Ready!</p>
-                            <p className="text-xs text-gray-500">Listen to the custom fairytale tune.</p>
+                            <p className="text-xs text-purple-900/85 font-bold">Listen to the custom fairytale tune.</p>
                           </div>
                         </div>
                         <audio 
@@ -1209,6 +1244,63 @@ const App: React.FC = () => {
         ) : (
           // STORYTELLING MODE (normal columns)
           <>
+            {/* Left Sidebar: Selectors & Mode Controls */}
+            <div className="w-full lg:w-80 flex flex-col gap-6">
+              <div className="glass-card rounded-[40px] p-6 shadow-xl bg-white/60 border border-white/50 backdrop-blur-md flex flex-col gap-6 flex-1 animate-in slide-in-from-left-8 duration-500">
+                <ModeSelector
+                  selected={storyMode}
+                  onChange={setStoryMode}
+                  disabled={connectionStatus === 'Connected' || isAgentLoading}
+                />
+
+                <ExerciseModeSelector
+                  selected={exerciseMode}
+                  onChange={setExerciseMode}
+                  disabled={connectionStatus === 'Connected'}
+                />
+
+                {/* Agent Mode: Loading / Ready state */}
+                {storyMode === 'agent' && (
+                  <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
+                    {isAgentLoading && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                        <p className="text-sm font-medium text-blue-700">{agentProgress || 'Preparing story...'}</p>
+                      </div>
+                    )}
+                    {!isAgentLoading && storyText && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-green-700 flex items-center gap-2">✨ Story ready!</p>
+                        <p className="text-xs text-gray-600 line-clamp-3 italic">{storyText.slice(0, 180)}...</p>
+                        <button
+                          onClick={connect}
+                          disabled={connectionStatus === 'Connected'}
+                          className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
+                        >
+                          🧚 Wake Puck!
+                        </button>
+                      </div>
+                    )}
+                    {!isAgentLoading && agentError && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-red-600">⚠️ {agentError}</p>
+                        <button onClick={() => fetchStory()} className="text-xs text-blue-600 underline">Try again</button>
+                      </div>
+                    )}
+                    {!isAgentLoading && !storyText && !agentError && (
+                      <button
+                        onClick={() => fetchStory()}
+                        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md"
+                      >
+                        🚀 Generate Story with Agents
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Middle Column: Main Story Player */}
             <div className="flex-1 flex flex-col gap-6">
               <div className="glass-card rounded-[40px] overflow-hidden flex-1 shadow-xl flex flex-col relative min-h-[400px] bg-white/60 border border-white/50 backdrop-blur-md">
                 <div className="flex-1 bg-white/20 flex items-center justify-center relative">
@@ -1221,7 +1313,7 @@ const App: React.FC = () => {
                   ) : (
                     <div className="text-center p-12 space-y-6">
                       {appState === 'IDLE' ? (
-                        <div className="text-gray-400 font-medium">Connect and start media below to begin the magic.</div>
+                        <div className="text-purple-800/80 font-bold text-center">Connect and start media below to begin the magic.</div>
                       ) : (
                         <div className="flex flex-col items-center gap-6">
                           <div className="w-20 h-20 border-8 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
@@ -1248,7 +1340,7 @@ const App: React.FC = () => {
                   className="bg-white/95 h-48 p-8 border-t border-white/50 backdrop-blur-xl overflow-y-auto scroll-smooth flex-shrink-0"
                 >
                   {accumulatedStory.length === 0 && !aiTranscription ? (
-                    <p className="text-gray-400 italic text-center text-xl">
+                    <p className="text-purple-800/70 font-semibold italic text-center text-xl">
                       {appState === 'STORYTELLING' ? "The magic is unfolding..." : "Your story awaits"}
                     </p>
                   ) : (
@@ -1259,7 +1351,7 @@ const App: React.FC = () => {
                         </p>
                       ))}
                       {aiTranscription && (
-                        <p className="text-purple-400 text-xl font-medium leading-relaxed italic">
+                        <p className="text-purple-600 text-xl font-extrabold leading-relaxed italic">
                           {formatStoryText(aiTranscription)}
                         </p>
                       )}
@@ -1269,7 +1361,8 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="w-full lg:w-96 flex flex-col gap-6">
+            {/* Right Sidebar: Camera, Energy, Achievements */}
+            <div className="w-full lg:w-80 flex flex-col gap-6">
               <div className={`glass-card rounded-[40px] overflow-hidden aspect-square relative shadow-xl bg-indigo-950 border-4 transition-all duration-500 ${isUserSpeaking ? 'border-pink-400 scale-[1.02]' : 'border-white/20'}`}>
                 <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 transition-opacity duration-1000 ${isCameraActive ? 'opacity-80' : 'opacity-0'}`} />
                 
@@ -1309,7 +1402,7 @@ const App: React.FC = () => {
                 <p className="text-[10px] text-orange-700/60 font-bold uppercase tracking-widest mt-3 text-center">Movement is the key to the magic</p>
               </div>
 
-              <div className="glass-card rounded-[40px] p-6 flex-1 shadow-inner bg-white/60 overflow-y-auto max-h-[300px] border border-white/50 backdrop-blur-md">
+              <div className="glass-card rounded-[40px] p-6 flex-1 shadow-inner bg-white/60 overflow-y-auto border border-white/50 backdrop-blur-md">
                 <h3 className="text-lg font-black text-purple-800 mb-4 flex items-center gap-2"><span className="text-2xl">🏺</span> Achievements</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {achievements.map(ach => (
@@ -1325,97 +1418,13 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* --- DEVELOPER CONTROL CENTER (The Google UI you requested) --- */}
-      {isOnboarded && (
-        <section className="w-full max-w-7xl bg-white/80 backdrop-blur-xl border-2 border-purple-100 shadow-2xl rounded-[40px] p-8 flex flex-col lg:flex-row gap-8 animate-in slide-in-from-bottom-8 duration-500">
-          {/* Connection & Media Settings */}
-          <div className="flex-1 flex flex-col gap-6">
-              {/* Mode Selector */}
-              <ModeSelector
-                selected={storyMode}
-                onChange={setStoryMode}
-                disabled={connectionStatus === 'Connected' || isAgentLoading}
-              />
+      {/* --- FOOTER --- */}
+      <footer className="w-full max-w-[1600px] border-t border-purple-100/50 pt-6 pb-2 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold text-purple-900/60 animate-in fade-in duration-1000">
+        <p>© 2026 Developed by <a href="https://github.com/vero-code" target="_blank" rel="noopener noreferrer" className="text-purple-800 underline hover:text-purple-950 transition-colors">Veronika Kashtanova</a></p>
+        <p>🪄 Crafted with Google Gemini, ADK, Cloud Run, Veo & Lyria. Let your imagination soar!</p>
+      </footer>
 
-              {/* Exercise Selector */}
-              <ExerciseModeSelector
-                selected={exerciseMode}
-                onChange={setExerciseMode}
-                disabled={connectionStatus === 'Connected'}
-              />
 
-              {/* Agent Mode: Loading / Ready state */}
-              {storyMode === 'agent' && (
-                <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
-                  {isAgentLoading && (
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                      <p className="text-sm font-medium text-blue-700">{agentProgress || 'Preparing story...'}</p>
-                    </div>
-                  )}
-                  {!isAgentLoading && storyText && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-bold text-green-700 flex items-center gap-2">✨ Story ready!</p>
-                      <p className="text-xs text-gray-600 line-clamp-3 italic">{storyText.slice(0, 180)}...</p>
-                      <button
-                        onClick={connect}
-                        disabled={connectionStatus === 'Connected'}
-                        className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
-                      >
-                        🧚 Wake Puck!
-                      </button>
-                    </div>
-                  )}
-                  {!isAgentLoading && agentError && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-bold text-red-600">⚠️ {agentError}</p>
-                      <button onClick={() => fetchStory()} className="text-xs text-blue-600 underline">Try again</button>
-                    </div>
-                  )}
-                  {!isAgentLoading && !storyText && !agentError && (
-                    <button
-                      onClick={() => fetchStory()}
-                      className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md"
-                    >
-                      🚀 Generate Story with Agents
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* --- AUDIO CONTROLS REMOVED --- */}
-          </div>
-
-          {/* Chat Logs & Debug Console */}
-          <div className="flex-1 flex flex-col gap-6">
-              <div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">💬 Chat Logs</h3>
-                  <div ref={chatContainerRef} className="border border-gray-200 bg-white rounded-xl h-[180px] overflow-y-auto p-4 space-y-2 shadow-inner text-sm">
-                      {chatMessages.length === 0 && <div className="text-gray-400 italic">Connect to Gemini to start chatting...</div>}
-                      {chatMessages.map((msg, i) => (
-                          <div key={i} className="leading-tight">
-                              <span className={`font-black text-[10px] px-2 py-0.5 mr-2 rounded text-white uppercase tracking-wider ${
-                                  msg.sender === 'SYSTEM' ? 'bg-red-500' : msg.sender === 'GEMINI' ? 'bg-blue-500' : 'bg-green-500'
-                              }`}>{msg.sender}</span>
-                              <span className={msg.type === 'transcript' ? 'italic text-gray-600' : 'text-gray-800 font-medium'}>{msg.text}</span>
-                          </div>
-                      ))}
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                      <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendText()} placeholder="Type message to Gemini..." className="flex-1 border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-purple-400" />
-                      <button onClick={sendText} className="bg-gray-800 text-white px-4 rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors">Send</button>
-                  </div>
-              </div>
-
-              <div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">🐛 Debug Console</h3>
-                  <pre className="border border-gray-200 bg-gray-900 text-green-400 rounded-xl h-[120px] overflow-y-auto p-4 text-[11px] font-mono shadow-inner whitespace-pre-wrap">
-                      {debugInfo}
-                  </pre>
-              </div>
-          </div>
-        </section>
-      )}
 
     </div>
   );
