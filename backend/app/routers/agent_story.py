@@ -17,18 +17,36 @@ class ChatRequest(BaseModel):
     message: str
     user_id: str = "default_user"
 
-# Grab the Orchestrator URL from environment
-orchestrator_url = os.environ.get("AGENT_SERVER_URL", "http://localhost:8004")
-# Ensure it points to the agent card if it looks like a Cloud Run URL
-if not orchestrator_url.endswith("agent-card.json") and "run.app" in orchestrator_url:
-    orchestrator_url = f"{orchestrator_url.rstrip('/')}/a2a/agent/.well-known/agent-card.json"
+import socket
 
-orchestrator_agent = RemoteA2aAgent(
-    name="gemini_tales_pipeline",
-    agent_card=orchestrator_url,
-    description="Remote orchestrator",
-    httpx_client=create_authenticated_client(orchestrator_url)
-)
+def get_orchestrator_url() -> str:
+    is_local = False
+    try:
+        with socket.create_connection(("127.0.0.1", 8004), timeout=0.1):
+            is_local = True
+    except OSError:
+        pass
+
+    if is_local:
+        url = "http://localhost:8004/a2a/agent/.well-known/agent-card.json"
+        logger.info(f"Detected local agent orchestrator running on port 8004. Using {url}")
+        return url
+
+    # Fallback to environment
+    url = os.environ.get("AGENT_SERVER_URL", "http://localhost:8004")
+    if not url.endswith("agent-card.json") and "run.app" in url:
+        url = f"{url.rstrip('/')}/a2a/agent/.well-known/agent-card.json"
+    logger.info(f"Using configured remote/fallback orchestrator URL: {url}")
+    return url
+
+def get_orchestrator_agent() -> RemoteA2aAgent:
+    url = get_orchestrator_url()
+    return RemoteA2aAgent(
+        name="gemini_tales_pipeline",
+        agent_card=url,
+        description="Remote orchestrator",
+        httpx_client=create_authenticated_client(url)
+    )
 
 session_service = InMemorySessionService()
 
@@ -61,8 +79,11 @@ async def chat_stream(req: ChatRequest):
                 )
                 # print(f"DEBUG: Session created: {session is not None}")
             
+            # Resolve orchestrator agent dynamically
+            orchestrator_agent = get_orchestrator_agent()
+            
             # 2. Instantiate Runner AFTER session is ready
-            # print(f"DEBUG: Initializing Runner for {orchestrator_agent.name} at {orchestrator_url}")
+            # print(f"DEBUG: Initializing Runner for {orchestrator_agent.name}")
             runner = Runner(
                 app_name="gemini_tales_proxy",
                 agent=orchestrator_agent,

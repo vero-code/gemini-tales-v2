@@ -33,6 +33,14 @@ if (Test-Path $envPath) {
     }
 }
 
+# Override Agent URLs to localhost for local execution
+Write-Host "--- Overriding agent URLs to localhost for local mode ---" -ForegroundColor Yellow
+[System.Environment]::SetEnvironmentVariable("RESEARCHER_AGENT_CARD_URL", "http://localhost:8001/a2a/agent/.well-known/agent-card.json", 'Process')
+[System.Environment]::SetEnvironmentVariable("JUDGE_AGENT_CARD_URL", "http://localhost:8002/a2a/agent/.well-known/agent-card.json", 'Process')
+[System.Environment]::SetEnvironmentVariable("BUILDER_AGENT_CARD_URL", "http://localhost:8003/a2a/agent/.well-known/agent-card.json", 'Process')
+[System.Environment]::SetEnvironmentVariable("AGENT_SERVER_URL", "http://localhost:8004/a2a/agent/.well-known/agent-card.json", 'Process')
+
+
 function Start-Agent($name, $agentArgs) {
     Write-Host "Starting $name..." -ForegroundColor Cyan
     $command = "cd '$PWD'; uv run python $agentArgs"
@@ -50,7 +58,7 @@ Write-Host "Waiting 5 seconds for agents to wake up..." -ForegroundColor Yellow
 Start-Sleep -Seconds 5
 
 # 4. Start Orchestrator
-$procs += Start-Agent "Orchestrator (8004)"    "adk_app.py orchestrator --host 0.0.0.0 --port 8004"
+$procs += Start-Agent "Orchestrator (8004)"    "adk_app.py orchestrator --host 0.0.0.0 --port 8004 --a2a"
 
 Write-Host ""
 Write-Host "All systems are up and running!" -ForegroundColor Green

@@ -25,10 +25,16 @@ def create_authenticated_client(
     Returns:
         httpx.AsyncClient: httpx Client with Google identity token authentication.
     """
+    parsed_url = urlparse(remote_service_url)
+    hostname = parsed_url.hostname or ""
+    if hostname in ("localhost", "127.0.0.1"):
+        return httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=timeout,
+        )
 
     class _IdentityTokenAuth(httpx.Auth):
         def __init__(self, remote_service_url: str):
-            parsed_url = urlparse(remote_service_url)
             self.root_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
             self.session = None
 
