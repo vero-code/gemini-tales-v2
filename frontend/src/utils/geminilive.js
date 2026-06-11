@@ -333,17 +333,19 @@ class GeminiLiveAPI {
   }
 
   sendTextMessage(text) {
-    const textMessage = {
-      client_content: {
-        turns: [
-          {
-            role: "user",
-            parts: [{ text: text }],
+    const textMessage = this.useADK
+      ? { text: text }
+      : {
+          client_content: {
+            turns: [
+              {
+                role: "user",
+                parts: [{ text: text }],
+              },
+            ],
+            turn_complete: true,
           },
-        ],
-        turn_complete: true,
-      },
-    };
+        };
     this.sendMessage(textMessage);
   }
 
