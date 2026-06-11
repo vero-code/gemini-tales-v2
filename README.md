@@ -1,22 +1,17 @@
 # ✨ Gemini Tales v2: The Evolution
 
-**This is the post-hackathon development repository for Gemini Tales, evolved and updated for the Google for Startups AI Agents Challenge.**
-
-> [!IMPORTANT]
-> **Stable Contest Version:** If you are a judge or looking for the original hackathon submission (frozen as of March 16, 2026), please visit the [Original Gemini Tales Repository](https://github.com/vero-code/gemini-tales).
+**This is the development repository for Gemini Tales, evolved and updated for the Google for Startups AI Agents Challenge.**
 
 ![Status](https://img.shields.io/badge/status-MVP-brightgreen?style=flat-square)
-![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4?style=flat-square&logo=google)
-![Lyria](https://img.shields.io/badge/Audio-Lyria-FF5722?style=flat-square&logo=google)
-![ADK](https://img.shields.io/badge/Framework-Google%20ADK-673AB7?style=flat-square&logo=google)
+![Gemini](https://img.shields.io/badge/AI-Gemini%203.1-4285F4?style=flat-square&logo=google)
+![Veo](https://img.shields.io/badge/Video-Veo%203.1-FF5722?style=flat-square&logo=google)
+![Lyria](https://img.shields.io/badge/Audio-Lyria%203-FF9800?style=flat-square&logo=google)
+![ADK](https://img.shields.io/badge/Framework-Google%20ADK%201.22.0-673AB7?style=flat-square&logo=google)
 ![Cloud](https://img.shields.io/badge/Hosted-Google%20Cloud-0F9D58?style=flat-square&logo=googlecloud)
-![Version](https://img.shields.io/badge/version-v2.4.0-orange?style=flat-square)
 
 _Turning screen time into active adventure — A magical AI storyteller that sees, hears, and moves with your child. The story that doesn't move until you do._
 
-Gemini Tales is an interactive fairytale book and a **Creative Storyteller ✍️** that **breaks the traditional "text box" paradigm**. It transforms screen time into an active adventure by creating a **seamless** experience where AI doesn't just process text—it sees, hears, and moves with the child.
-
-Built with a premium **React 19 + Vite** frontend, it leverages the **Gemini Live API** for **Interleaved Output** — weaving real-time voice, vision, and watercolor illustrations into a single, **context-aware** stream that makes the magic **feel alive**.
+Gemini Tales is an interactive fairytale book and a **Creative Storyteller ✍️** that **breaks the traditional "text box" paradigm**. It transforms screen time into an active adventure by creating a **seamless** experience where AI doesn't just process text—it sees, hears, and moves with.
 
 ---
 
@@ -35,6 +30,9 @@ Built with a premium **React 19 + Vite** frontend, it leverages the **Gemini Liv
 ---
 
 ## 📺 Watch in Action
+
+Gemini Tales - The Complete Story of V2.0:
+[![Gemini Tales Complete Story]()]()
 
 Gemini Tales - Early Submission:
 [![Gemini Tales Demo](https://img.youtube.com/vi/DWHs0eOIf_Q/maxresdefault.jpg)](https://youtu.be/DWHs0eOIf_Q)
@@ -76,7 +74,7 @@ To ensure children get the exact type of movement they need, Gemini Tales now fe
 
 ---
 
-## ⚡ Movement Impact Dashboard (New!)
+## ⚡ Movement Impact Dashboard
 
 Gemini Tales v2 now features a real-time **Heroic Energy Tracker** (Phase 1 Movement Metrics). This system bridges the gap between digital play and physical health by quantifying the child's activity:
 
@@ -99,7 +97,7 @@ Gemini Tales v2 now features a real-time **Heroic Energy Tracker** (Phase 1 Move
 ```mermaid
 graph TD
     User([User]) <--> Browser["Browser (Magic Mirror UI)"]
-
+    
     subgraph "Main Interaction Agent (Puck)"
         Browser <-->|WebSocket| Puck["Puck (Live Narrator)"]
         subgraph "Puck's Toolbox"
@@ -109,21 +107,21 @@ graph TD
         Puck <--> Illustrator
         Puck <--> Awards
     end
-
+    
     subgraph "Google AI Infrastructure"
-        Puck <-->|Multimodal Flow| GeminiLive[Gemini 3.1 Flash Live]
+        Puck <-->|Multimodal Flow| GeminiLive["Gemini Live (via MODEL_ID)"]
         Illustrator -->|Video Generation| Veo[Veo 3.1]
-        Illustrator -->|Dynamic Rendering| FlashImage[Gemini 3.1 Flash-Image]
+        Illustrator -->|Dynamic Rendering| FlashImage["Gemini 3.1 Flash-Image (Nano Banana 2)"]
         Illustrator -->|Audio Composition| Lyria3[Lyria 3]
     end
-
+    
     subgraph "Supporting Brain (Agent Mode)"
         Puck -->|Request Pipeline| Orchestrator[Orchestrator]
         Orchestrator <-->|A2A| Researcher[Researcher]
         Orchestrator <-->|A2A| Judge[Judge]
         Orchestrator <-->|A2A| Storysmith[Storysmith]
     end
-
+    
     style Browser fill:#f9f,stroke:#333,stroke-width:2px
     style Puck fill:#f9f,stroke:#333,stroke-width:2px
     style Orchestrator fill:#ccf,stroke:#333,stroke-width:2px
@@ -149,7 +147,7 @@ This trace shows the complete flow: **Puck** → **Orchestrator** → **Research
 - 🌿 **Cinematic Animation**: **Puck** comes to life with **Veo 3.1**, generating magical video previews that make the world **feel alive**.
 - ✌️ **Seamless Interaction**: Real-time visual recognition and **context-aware** response: Stories only begin when Puck sees the "Magic Sign" (two fingers up).
 - 📸 **Portrait Transformation**: Upload a photo to see the child transformed into a watercolor fairytale character.
-- 🎨 **Visual Consistency**: High-quality scene illustrations are automatically generated by **Gemini 2.5 Flash-Image** as the story unfolds, creating a world that is always aware of the narrative state.
+- 🎨 **Visual Consistency**: High-quality scene illustrations are automatically generated by **Gemini 3.1 Flash-Image (Nano Banana 2)** as the story unfolds, creating a world that is always aware of the narrative state.
 - 🎵 **Adaptive Music (Lyria 3)**: Every scene in the story now has its own unique, high-fidelity 48kHz stereo background music generated by **Lyria 3**. The AI "looks" at the scene illustration and composes a 30-second soundtrack that perfectly matches the visual atmosphere.
 - ⭐ **Achievements & Badges**: Complete physical challenges (like "Hop like a bunny") to unlock magical badges and track your hero's journey in real-time.
 
@@ -157,7 +155,7 @@ This trace shows the complete flow: **Puck** → **Orchestrator** → **Research
 
 ## 🍌 Nano Banana 2 Enhancements
 
-Upgraded to **[Gemini 3.1 Flash-Image Preview (Nano Banana 2)](https://ai.google.dev/gemini-api/docs/models/gemini)** with three powerful improvements:
+Upgraded to **[Gemini 3.1 Flash-Image (Nano Banana 2)](https://ai.google.dev/gemini-api/docs/models/gemini)** with two powerful improvements:
 
 ### 1. 🎨 High-Fidelity Photo Transformation
 
@@ -177,25 +175,12 @@ Scene illustrations now use real-world information for enhanced accuracy and rea
 - **Magical Realism**: Maintains whimsical fairytale style while depicting real-world accuracy.
 - **Technical**: Google Search tool integrated into scene generation chat session for live data fetching.
 
-### 3. 🔄 Character 360° View (Different Poses)
-
-See your character from multiple angles while maintaining perfect consistency.
-
-- **4 Interactive Views**: Profile Right → Profile Left → From Behind → Bird's Eye (three-quarter from above).
-- **Perfect Consistency**: Uses multi-turn chat memory to ensure the same character across all poses.
-- **Easy to Use**: One-click buttons in the "360° View" section to rotate your character.
-- **Technical**: Same `chat_avatar` session maintains character memory across multiple pose generations.
-
-<p align="center">
-  <img src="assets/360_view.png" alt="360 View Character Angles Interface" width="500">
-</p>
-
 ### Configuration
 
 Model names are now externalized to environment variables for easy customization:
 
 ```env
-VITE_MODEL_ID_IMAGE=gemini-3.1-flash-image-preview
+VITE_MODEL_ID_IMAGE=gemini-3.1-flash-image
 LYRIA_MODEL_ID=lyria-3-clip-preview
 VIDEO_MODEL_ID=veo-3.1-generate-preview
 ```
@@ -222,11 +207,11 @@ The "Magic Mirror" cockpit provides full transparency and control over the AI ex
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS.
 - **AI Models**:
-  - **Gemini 3.1 Flash Live Preview** (Real-time Audio/Vision - Released March 26, 2026)
-  - **Gemini 3.1 Pro & Flash-Lite** (Agentic Reasoning)
-  - **Gemini 3.1 Flash-Image Preview (Nano Banana 2)** (High-fidelity avatars & scenes with Google Search grounding)
-  - **Lyria 3** (Adaptive 48kHz stereo background music generation)
-  - **Veo 3.1** (Cinematic Video Generation)
+  - **Gemini 2.5 / 3.1 Flash Live** (Real-time Audio/Vision - via `MODEL_ID` in `.env`)
+  - **Gemini 3.1 Pro & Flash-Lite (Preview)** (Agentic Reasoning - via `MODEL_NAME` / `MODEL_NAME_FLASH`)
+  - **Gemini 3.1 Flash-Image (Nano Banana 2)** (High-fidelity avatars & scenes - via `VITE_MODEL_ID_IMAGE`)
+  - **Lyria 3** (Adaptive 48kHz stereo background music - via `LYRIA_MODEL_ID`)
+  - **Veo 3.1** (Cinematic Video Generation - via `VIDEO_MODEL_ID`)
 - **Backend**: FastAPI, Google ADK, WebSockets.
 - **Hosting**: Google Cloud Run, Cloud Artifact Registry.
 - **Image Processing**: PIL (Python Imaging Library) for avatar manipulation.
@@ -313,35 +298,40 @@ _This script handles the dual-stage build: compiling the React 19 frontend and w
 
 Follow these steps to ensure a magical and stable session:
 
-### 1. The Character Workshop
+### 1. The Character Workshop & Setup
 
-- **Customize Puck**: Enter a description for your character or upload a photo to create a personalized fairytale avatar.
-  - 📸 **Photo Upload**: Transform any photo into a magical fairytale character using **High-Fidelity detail preservation** — the person remains instantly recognizable while becoming beautifully illustrated.
-- **Bring Him to Life**: Once Puck is generated, click the **Animate** button to see him start moving! (Powered by **Veo 3.1**).
-- **Action Poses**: Generate Puck performing actions ("🪄 Cast Magic", "🏃 Run in Field") to show him in dynamic moments.
-- **360° View**: Rotate your character to see him from different angles:
-  - **👈 Profile Right** — View from the side looking right
-  - **👉 Profile Left** — View from the side looking left
-  - **🔄 From Behind** — View from behind looking over shoulder
-  - **⬆️ Bird's Eye** — Three-quarter view from above
-  - Each pose maintains perfect character consistency using multi-turn chat memory.
-- **Choose Your Journey**: Select **Live Mode** for spontaneous play or **Agent Mode** for a structured, multi-agent story.
+Our redesigned onboarding experience takes the user through a structured Character Workshop to customize their magical companion:
 
-### 2. Ignition
+1. **Select Puck's Style**: Choose one of 4 unique fairytale styles:
+   - 🧚 **Elf** — Magic Woodland Elf
+   - 🪄 **Wizard** — Young Sorcerer
+   - 👑 **Royal** — Prince / Princess
+   - 🦊 **Critter** — Fox / Woodland Animal
+2. **Upload Photo**: Upload a photo (or type a custom description) to transform the child's likeness into a watercolor fairytale character using **Gemini 3.1 Flash-Image (Nano Banana 2)**. The smart detail preservation ensures the child remains instantly recognizable.
+3. **Cinematic Animation**: Click the **Animate** button to see Puck come to life with a 4-second magical video preview generated by **Veo 3.1**.
+4. **Compose Theme Music**: Select one of 4 musical genres to compose Puck's background theme music using **Lyria 3**:
+   - 🌲 **Forest** — Whimsical woodland melodies
+   - 🔮 **Sorcerer** — Mystical celestial chords
+   - 🏰 **Harp** — Elegant royal palace harp music
+   - 🥁 **March** — Brave heroic adventure march
+5. **Choose Story Mode**: Select one of the two distinct ways to experience the magic:
+   - 🎙️ **Live Mode (Spontaneous)**: Immediate unscripted live session with Puck. Puck acts as the Improviser, dynamically creating the narrative on the fly in response to the child's comments, surroundings, and actions.
+   - 🤖 **Agent Mode (Structured)**: Pre-generates a detailed, safe narrative using our background ADK agents (Researcher, Judge, Storysmith). Once the script is ready, the button changes to **"Wake Puck!"** to start the session, where Puck follows the structured blueprint exactly.
+6. **Choose Exercise Focus**: Adapt the physical challenges to adapt the narration to your goals:
+   - ✨ **Sky Magic (Upper Body)**: Exercises focused on arms and upper body (like flying, waving wands, reaching for the stars).
+   - 🌿 **Earth Magic (Lower Body)**: Exercises focused on legs and lower body (like stomping, jumping, running, balancing).
+   - ☀️ **Solar Power (Full Body)**: High-energy, full-body exercises.
 
-- **Live Mode**: Click **Connect API** to establish a direct link with Gemini.
-- **Agent Mode**: Click **🚀 Generate Story with Agents** to begin the story crafting process.
-
-### 3. Magical Interaction
+### 2. Magical Interaction
 
 - **Listen & Act**: Follow the spoken instructions from Puck.
 - **Watch the Magic**: As you journey through the tale, Puck will automatically generate beautiful illustrations for every new scene using **Google Search grounding** — real locations and elements are accurately depicted while maintaining a whimsical fairytale style.
 - **Earn Badges**: Successfully complete physical tasks to unlock **Achievements** and see your badge collection grow!
 - **Voice Response**: Select your **Microphone** and click **Start Audio** to talk to the mirror.
 - **Vision Recognition**: Select your **Camera** and click **Start Video** to show your face and the "Magic Sign".
-- **Chat Fallback**: If you're in a quiet place, you can also type messages directly into the **Chat Hub**.
+- **Debug Console**: Check the **Debug Console** to see the WebSocket status and any error messages.
 
-### 4. Troubleshooting
+### 3. Troubleshooting
 
 - **No Sound/Image?**: Ensure the correct device is selected in the **Microphone** and **Camera** dropdowns before clicking "Start".
 - **Connection**: Check the **Debug Console** to verify that the WebSocket status is "Connected".

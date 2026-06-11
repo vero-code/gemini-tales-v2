@@ -252,10 +252,11 @@ Our current system workflow integrates character onboarding and interactive move
 ```
 
 ### 7.1 Onboarding & Customization Flow
-1. **Avatar Generation**: The user uploads a photo to the Character Workshop, and **Gemini 3.1 Flash-Image (Nano Banana 2)** generates a customized watercolor fairytale character.
-2. **Animation**: Clicking the **Animate** button prompts **Veo 3.1** to generate a 4-second animated video loop of the character.
-3. **Soundtrack**: **Lyria 3** composes a custom background theme matching the avatar's style.
-4. **Transition**: The user enters the main screen to begin the interactive story.
+1. **Style Selection**: The user selects one of 4 character styles: Elf (woodland), Wizard (sorcerer), Royal (prince/princess), or Critter (animal).
+2. **Avatar Generation**: The user uploads a photo to the Character Workshop, and **Gemini 3.1 Flash-Image (Nano Banana 2)** generates a customized watercolor fairytale character portrait keeping their facial details recognizable.
+3. **Animation**: Clicking the **Animate** button prompts **Veo 3.1** to generate a 4-second animated video loop of the character.
+4. **Soundtrack**: The user selects one of 4 music genres (Forest, Sorcerer, Harp, March), and **Lyria 3** composes a custom background theme matching the avatar's style and selected mood.
+5. **Transition**: The user enters the main screen to begin the interactive story.
 
 ### 7.2 Movement Analysis & Energy Verification
 When the child is asked to perform a physical task, the following flow triggers:
