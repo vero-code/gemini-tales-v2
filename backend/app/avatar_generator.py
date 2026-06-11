@@ -52,9 +52,25 @@ class StoryAvatarGenerator:
                 project=self.project_id,
                 location="global"
             )
+            # veo-3.1-generate-preview ONLY exists on Gemini API, NOT on Vertex AI.
+            # The SDK reads GOOGLE_GENAI_USE_VERTEXAI env var at creation time and overrides api_key.
+            # Fix: temporarily pop the env var so the SDK uses Gemini API for video.
+            api_key = os.getenv("GEMINI_API_KEY")
+            _vertex_env = os.environ.pop("GOOGLE_GENAI_USE_VERTEXAI", None)
+            try:
+                if api_key:
+                    self.video_client = genai.Client(api_key=api_key)
+                    logger.info("🎬 Video client initialized via Gemini API (api_key, bypassing Vertex AI env)")
+                else:
+                    logger.warning("⚠️ GEMINI_API_KEY not set — video generation will fail on Cloud Run")
+                    self.video_client = self.client
+            finally:
+                if _vertex_env is not None:
+                    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = _vertex_env
         else:
             self.client = genai.Client()
             self.image_client = self.client
+            self.video_client = self.client
 
         # Initialize model and create separate chat sessions for different use cases
         image_model = os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image")
@@ -404,28 +420,27 @@ The character must be IMMEDIATELY recognizable from any angle."""
                 logger.warning(f"Could not load latest portrait for video generation: {e}")
 
         video_model = os.getenv("VIDEO_MODEL_ID", "veo-3.1-generate-preview")
-        operation = self.client.models.generate_videos(
+        logger.info(f"🎬 Using video model: {video_model} via Gemini API client")
+        operation = self.video_client.models.generate_videos(
             model=video_model,
             prompt=prompt,
             image=input_image,
             config=types.GenerateVideosConfig(
                 aspect_ratio="16:9",
-                resolution="720p",
-                duration_seconds=4,
             )
         )
 
         # Poll until complete
         while not operation.done:
             logger.info("   Generating video...")
-            time.sleep(5)
-            operation = self.client.operations.get(operation)
+            time.sleep(10)
+            operation = self.video_client.operations.get(operation)
 
         if not operation.response or not operation.response.generated_videos:
             raise Exception("Failed to generate animation - no video in response")
 
         generated_video = operation.response.generated_videos[0]
-        self.client.files.download(file=generated_video.video)
+        self.video_client.files.download(file=generated_video.video)
         filename = f"puck_anim_{uuid.uuid4().hex[:8]}.mp4"
         video_path = os.path.join(self.output_dir, filename)
         generated_video.video.save(video_path)
