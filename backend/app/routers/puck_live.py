@@ -280,11 +280,21 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
                 for transformed_event in transformed_events:
                     await websocket.send_text(json.dumps(transformed_event))
         except Exception as e:
-            logger.error(f"❌ Puck Downstream error: {e}")
+            err_msg = str(e).lower()
+            if any(x in err_msg for x in ["disconnect", "closed", "unexpected asgi message", "completed"]):
+                logger.info(f"Puck Downstream closed cleanly: {e}")
+            else:
+                logger.error(f"❌ Puck Downstream error: {e}")
+
+    upstream = asyncio.create_task(upstream_task())
+    downstream = asyncio.create_task(downstream_task())
 
     try:
-        await asyncio.gather(upstream_task(), downstream_task())
+        await asyncio.gather(upstream, downstream)
     finally:
+        upstream.cancel()
+        downstream.cancel()
+        
         if send_illustration in illustration_callbacks:
             illustration_callbacks.remove(send_illustration)
         if send_badge in badge_callbacks:
