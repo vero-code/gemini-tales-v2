@@ -46,14 +46,21 @@ class StoryAvatarGenerator:
                 project=self.project_id,
                 location=self.location
             )
+            # Create a separate client specifically for the global gemini-3.1-flash-image model
+            self.image_client = genai.Client(
+                vertexai=True,
+                project=self.project_id,
+                location="global"
+            )
         else:
             self.client = genai.Client()
+            self.image_client = self.client
 
         # Initialize model and create separate chat sessions for different use cases
-        image_model = os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview")
+        image_model = os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image")
         
         # Chat session for character portraits (1:1 aspect ratio)
-        self.chat_avatar = self.client.chats.create(
+        self.chat_avatar = self.image_client.chats.create(
             model=image_model,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"],
@@ -65,7 +72,7 @@ class StoryAvatarGenerator:
         )
         
         # Chat session for scene illustrations (16:9 aspect ratio) with Google Search grounding
-        self.chat_scene = self.client.chats.create(
+        self.chat_scene = self.image_client.chats.create(
             model=image_model,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"],

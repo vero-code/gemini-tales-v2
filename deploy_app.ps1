@@ -55,6 +55,9 @@ if ($env:GEMINI_API_KEY) { $buildVars += ",VITE_GEMINI_API_KEY=$($env:GEMINI_API
 # Runtime variables for the Python backend
 $runVars = "GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT,GOOGLE_CLOUD_LOCATION=$REGION,GOOGLE_GENAI_USE_VERTEXAI=true"
 if ($env:MODEL_ID) { $runVars += ",MODEL_ID=$($env:MODEL_ID)" }
+if ($env:VITE_MODEL_ID_IMAGE) { $runVars += ",VITE_MODEL_ID_IMAGE=$($env:VITE_MODEL_ID_IMAGE)" }
+if ($env:LYRIA_MODEL_ID) { $runVars += ",LYRIA_MODEL_ID=$($env:LYRIA_MODEL_ID)" }
+if ($env:VIDEO_MODEL_ID) { $runVars += ",VIDEO_MODEL_ID=$($env:VIDEO_MODEL_ID)" }
 if ($env:GEMINI_API_KEY) { $runVars += ",GEMINI_API_KEY=$($env:GEMINI_API_KEY)" }
 
 try {

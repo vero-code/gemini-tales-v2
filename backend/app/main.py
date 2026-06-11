@@ -57,7 +57,7 @@ async def get_config():
     return {
         "PROJECT_ID": os.getenv("GOOGLE_CLOUD_PROJECT"),
         "MODEL_ID": model_id,
-        "MODEL_ID_IMAGE": os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image-preview"),
+        "MODEL_ID_IMAGE": os.getenv("VITE_MODEL_ID_IMAGE", "gemini-3.1-flash-image"),
         "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY")
     }
 
