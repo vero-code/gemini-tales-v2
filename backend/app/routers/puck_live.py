@@ -165,6 +165,25 @@ Your ONLY task is to read the story provided in the 'STORY BLUEPRINT' message.
     # Use copy for shallow copy to avoid overriding global puck_agent but sharing tools
     local_puck = copy.copy(puck_agent)
     local_puck.instruction = current_instruction
+
+    # Override model client to force Gemini Developer API (API key) for Live narrator connection
+    # because the preview audio model is only available on Gemini Developer API.
+    # We do this by instantiating the model object, popping the VERTEXAI env var during 
+    # client caching, and restoring it.
+    import os
+    model_instance = local_puck.canonical_model
+    vertexai_env = os.environ.pop("GOOGLE_GENAI_USE_VERTEXAI", None)
+    try:
+        # Cache the client properties on this instance using Gemini API
+        _ = model_instance.api_client
+        _ = model_instance._live_api_client
+        _ = model_instance._api_backend
+    finally:
+        if vertexai_env is not None:
+            os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = vertexai_env
+    # Assign the model instance back to the agent so ADK uses it instead of string resolving
+    local_puck.model = model_instance
+
     local_runner = Runner(app_name="puck_adventure", agent=local_puck, session_service=session_service)
 
 
