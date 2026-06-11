@@ -28,11 +28,25 @@ class MusicGenerator:
 
         use_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "true").lower() in ("true", "1", "yes")
         if use_vertex:
-            self.client = genai.Client(
-                vertexai=True,
-                project=self.project_id,
-                location=self.location
-            )
+            # lyria-3-clip-preview is only available via Gemini API, NOT Vertex AI.
+            # Temporarily pop GOOGLE_GENAI_USE_VERTEXAI so SDK routes to Gemini API.
+            api_key = os.getenv("GEMINI_API_KEY")
+            _vertex_env = os.environ.pop("GOOGLE_GENAI_USE_VERTEXAI", None)
+            try:
+                if api_key:
+                    self.client = genai.Client(api_key=api_key)
+                    logger.info("🎵 Music client initialized via Gemini API (api_key)")
+                else:
+                    # Fallback: Vertex AI with us-central1 (may fail for lyria preview)
+                    self.client = genai.Client(
+                        vertexai=True,
+                        project=self.project_id,
+                        location=self.location
+                    )
+                    logger.warning("⚠️ No GEMINI_API_KEY — music client using Vertex AI (may fail)")
+            finally:
+                if _vertex_env is not None:
+                    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = _vertex_env
         else:
             self.client = genai.Client()
         
