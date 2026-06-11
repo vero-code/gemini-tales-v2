@@ -51,17 +51,17 @@ try {
         }
     }
 
-    Write-Host "`n--- Deploying Researcher ---" -ForegroundColor Cyan
-    gcloud run deploy researcher --source "researcher" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated
+    Write-Host "\n--- Deploying Researcher ---" -ForegroundColor Cyan
+    gcloud run deploy researcher --source "researcher" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated --quiet
 
-    Write-Host "`n--- Deploying Content Builder ---" -ForegroundColor Cyan
-    gcloud run deploy content-builder --source "content_builder" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated
+    Write-Host "\n--- Deploying Content Builder ---" -ForegroundColor Cyan
+    gcloud run deploy content-builder --source "content_builder" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated --quiet
 
-    Write-Host "`n--- Deploying Judge ---" -ForegroundColor Cyan
-    gcloud run deploy judge --source "judge" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated
+    Write-Host "\n--- Deploying Judge ---" -ForegroundColor Cyan
+    gcloud run deploy judge --source "judge" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated --quiet
 
-    Write-Host "`n--- Deploying Orchestrator ---" -ForegroundColor Cyan
-    gcloud run deploy orchestrator --source "orchestrator" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated
+    Write-Host "\n--- Deploying Orchestrator ---" -ForegroundColor Cyan
+    gcloud run deploy orchestrator --source "orchestrator" --project $GOOGLE_CLOUD_PROJECT --region $REGION --no-allow-unauthenticated --quiet
 
     Write-Host "`nAGENT DEPLOYMENT COMPLETE!" -ForegroundColor Green
 }

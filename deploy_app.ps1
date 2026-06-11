@@ -69,7 +69,8 @@ try {
         --region $REGION `
         --allow-unauthenticated `
         --set-build-env-vars "$buildVars" `
-        --set-env-vars "$runVars"
+        --set-env-vars "$runVars" `
+        --quiet
 
     Write-Host "`nAPP DEPLOYMENT COMPLETE!" -ForegroundColor Green
     Write-Host "Your Magic Mirror is live at the URL shown above."
