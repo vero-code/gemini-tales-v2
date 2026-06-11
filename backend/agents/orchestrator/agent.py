@@ -9,6 +9,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.agents.callback_context import CallbackContext
 
 from authenticated_httpx import create_authenticated_client
+from trace_store import clear_trace, append_step
 
 load_dotenv()
 
@@ -16,7 +17,17 @@ MODEL = os.getenv("MODEL_NAME", "gemini-2.5-pro")
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 
+AGENT_DISPLAY_NAMES = {
+    "researcher": "🕵️ Adventure Seeker",
+    "judge": "⚖️ Guardian of Balance",
+    "content_builder": "🧙‍♂️ Storysmith",
+}
+
 # --- Callbacks ---
+def before_pipeline_callback(callback_context: CallbackContext, **kwargs) -> None:
+    """Clear the trace at the start of each new pipeline run."""
+    clear_trace()
+
 def create_save_output_callback(key: str):
     """Creates a callback to save the agent's final response to session state."""
     def callback(callback_context: CallbackContext, **kwargs) -> None:
@@ -35,6 +46,9 @@ def create_save_output_callback(key: str):
                     else:
                         ctx.state[key] = text
                     print(f"[{ctx.agent_name}] Saved output to state['{key}']")
+                    # Record in trace
+                    display_name = AGENT_DISPLAY_NAMES.get(ctx.agent_name, ctx.agent_name)
+                    append_step(ctx.agent_name, display_name, text)
                     return
     return callback
 
@@ -68,6 +82,7 @@ content_builder = RemoteA2aAgent(
     name="content_builder",
     agent_card=content_builder_url,
     description="Weaves the findings into a magical adventure story.",
+    after_agent_callback=create_save_output_callback("story_output"),
     httpx_client=create_authenticated_client(content_builder_url)
 )
 
@@ -115,5 +130,6 @@ root_agent = SequentialAgent(
     name="gemini_tales_pipeline",
     description="A pipeline that creates interactive movement-based stories for kids.",
     sub_agents=[research_loop, content_builder],
+    before_agent_callback=before_pipeline_callback,
 )
 

@@ -13,6 +13,8 @@ backend/.env
 backend/*.pyc
 backend/app/.gcloudignore
 backend/.python-version
+_last_trace.json
+
 
 # Environment Variables
 .env

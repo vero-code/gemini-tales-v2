@@ -1,6 +1,8 @@
 import os
 import json
+import socket
 import logging
+import httpx
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -133,20 +135,50 @@ async def chat_stream(req: ChatRequest):
                             text_to_send = "".join(text_parts)
                         
                         if text_to_send:
-                            # If it's the final output of the pipeline or content builder
+                            agent_display_names = {
+                                "researcher": "🕵️ Adventure Seeker",
+                                "judge": "⚖️ Guardian of Balance",
+                                "content_builder": "🧙‍♂️ Storysmith",
+                                "escalation_checker": "✅ Safety Check",
+                                "research_loop": "🔄 Research Loop",
+                                "gemini_tales_pipeline": "🪄 Orchestrator",
+                            }
+                            display_name = agent_display_names.get(author, author)
+
+                            # Final result: pipeline or content_builder finished
                             if author in ["gemini_tales_pipeline", "content_builder", orchestrator_agent.name]:
                                 yield json.dumps({"type": "result", "text": text_to_send}) + "\n"
+                                # After result — fetch and emit trace steps from orchestrator
+                                try:
+                                    orchestrator_base = get_orchestrator_url().split("/a2a/")[0]
+                                    async with httpx.AsyncClient(timeout=5.0) as client:
+                                        resp = await client.get(f"{orchestrator_base}/last_trace")
+                                        if resp.status_code == 200:
+                                            trace_data = resp.json()
+                                            for step in trace_data.get("steps", []):
+                                                yield json.dumps({
+                                                    "type": "step",
+                                                    "agent": step["agent"],
+                                                    "display_name": step["display_name"],
+                                                    "text": step["text"],
+                                                }) + "\n"
+                                except Exception as trace_err:
+                                    logger.warning(f"Could not fetch pipeline trace: {trace_err}")
                             else:
-                                # Intermediate results can be shown as progress
-                                yield json.dumps({"type": "progress", "text": f"🧠 {author} finished: {text_to_send[:50]}..."}) + "\n"
+                                # Intermediate step — emit full output as a 'step' event
+                                yield json.dumps({
+                                    "type": "step",
+                                    "agent": author,
+                                    "display_name": display_name,
+                                    "text": text_to_send,
+                                }) + "\n"
 
-                    # Even if no content, show which agent is active
-                    elif author and author != "research_loop":
+                    # No content — agent is still thinking: emit progress
+                    elif author and author not in ("research_loop", "escalation_checker", "gemini_tales_pipeline"):
                         agent_display_names = {
                             "researcher": "🕵️ Adventure Seeker",
                             "judge": "⚖️ Guardian of Balance",
                             "content_builder": "🧙‍♂️ Storysmith",
-                            "orchestrator": "🪄 Orchestrator"
                         }
                         display_name = agent_display_names.get(author, author)
                         yield json.dumps({"type": "progress", "text": f"⏳ {display_name} is thinking..."}) + "\n"

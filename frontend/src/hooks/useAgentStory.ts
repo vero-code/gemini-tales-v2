@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import type { AgentStep } from '../components/AgentPipelineTrace';
 
 const PROXY_BASE_URL = (() => {
   const raw = import.meta.env.VITE_PROXY_URL || '';
@@ -11,6 +12,7 @@ const PROXY_BASE_URL = (() => {
 interface UseAgentStoryResult {
   fetchStory: (prompt?: string) => Promise<void>;
   storyText: string | null;
+  steps: AgentStep[];
   isLoading: boolean;
   progress: string;
   error: string | null;
@@ -19,6 +21,7 @@ interface UseAgentStoryResult {
 
 export function useAgentStory(): UseAgentStoryResult {
   const [storyText, setStoryText] = useState<string | null>(null);
+  const [steps, setSteps] = useState<AgentStep[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +30,7 @@ export function useAgentStory(): UseAgentStoryResult {
   const reset = () => {
     abortRef.current?.abort();
     setStoryText(null);
+    setSteps([]);
     setIsLoading(false);
     setProgress('');
     setError(null);
@@ -70,6 +74,14 @@ export function useAgentStory(): UseAgentStoryResult {
             const event = JSON.parse(line);
             if (event.type === 'progress') {
               setProgress(event.text);
+            } else if (event.type === 'step') {
+              setSteps(prev => [...prev, {
+                agent: event.agent,
+                display_name: event.display_name,
+                text: event.text,
+                timestamp: Date.now(),
+              }]);
+              setProgress(`✅ ${event.display_name} finished`);
             } else if (event.type === 'result') {
               setStoryText(event.text);
               setProgress('✨ Story is ready!');
@@ -88,5 +100,6 @@ export function useAgentStory(): UseAgentStoryResult {
     }
   };
 
-  return { fetchStory, storyText, isLoading, progress, error, reset };
+  return { fetchStory, storyText, steps, isLoading, progress, error, reset };
 }
+

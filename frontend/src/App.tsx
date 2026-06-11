@@ -7,6 +7,7 @@ import { INITIAL_ACHIEVEMENTS } from './config';
 import { ModeSelector } from './components/ModeSelector';
 import { ExerciseModeSelector } from './components/ExerciseModeSelector';
 import { useAgentStory } from './hooks/useAgentStory';
+import AgentPipelineTrace from './components/AgentPipelineTrace';
 
 // --- ENV VARIABLES ---
 // --- DYNAMIC CONFIGURATION ---
@@ -96,7 +97,8 @@ const App: React.FC = () => {
   // --- MODE STATE ---
   const [storyMode, setStoryMode] = useState<StoryMode>('live');
   const [exerciseMode, setExerciseMode] = useState<ExerciseMode>('solar_power');
-  const { fetchStory, storyText, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
+  const { fetchStory, storyText, steps: agentSteps, isLoading: isAgentLoading, progress: agentProgress, error: agentError, reset: resetAgentStory } = useAgentStory();
+  const [isPipelineOpen, setIsPipelineOpen] = useState(false);
 
   const [characterDescription, setCharacterDescription] = useState('a small woodland elf with translucent wings and a twig wand');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -1284,13 +1286,22 @@ const App: React.FC = () => {
                       <div className="space-y-2">
                         <p className="text-sm font-bold text-green-700 flex items-center gap-2">✨ Story ready!</p>
                         <p className="text-xs text-gray-600 line-clamp-3 italic">{storyText.slice(0, 180)}...</p>
-                        <button
-                          onClick={connect}
-                          disabled={connectionStatus === 'Connected'}
-                          className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
-                        >
-                          🧚 Wake Puck!
-                        </button>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={connect}
+                            disabled={connectionStatus === 'Connected'}
+                            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50"
+                          >
+                            🧚 Wake Puck!
+                          </button>
+                          <button
+                            onClick={() => setIsPipelineOpen(true)}
+                            title="View agent pipeline trace"
+                            className="px-3 py-2.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold text-sm transition-all border border-purple-200"
+                          >
+                            🔍
+                          </button>
+                        </div>
                       </div>
                     )}
                     {!isAgentLoading && agentError && (
@@ -1461,8 +1472,13 @@ const App: React.FC = () => {
         <p>© 2026 Developed by <a href="https://github.com/vero-code" target="_blank" rel="noopener noreferrer" className="text-purple-800 underline hover:text-purple-950 transition-colors">Veronika Kashtanova</a>. Updated for <a href="https://devpost.team/google-cloud-for-startups/projects/15415" target="_blank" rel="noopener noreferrer" className="text-purple-800 underline hover:text-purple-950 transition-colors">Google for Startups AI Agents Challenge</a></p>
         <p>🪄 Crafted with Google Gemini, ADK, Cloud Run, Veo & Lyria. Let your imagination soar!</p>
       </footer>
-
-
+      {/* --- AGENT PIPELINE TRACE MODAL --- */}
+      <AgentPipelineTrace
+        steps={agentSteps}
+        finalStory={storyText}
+        isOpen={isPipelineOpen}
+        onClose={() => setIsPipelineOpen(false)}
+      />
 
     </div>
   );

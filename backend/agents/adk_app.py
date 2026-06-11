@@ -256,6 +256,21 @@ def main(
         from starlette.middleware.base import BaseHTTPMiddleware
         from a2a_utils import a2a_card_dispatch
         app.add_middleware(BaseHTTPMiddleware, dispatch=a2a_card_dispatch)
+
+    # Expose /last_trace endpoint for the orchestrator so the main backend can
+    # fetch the full per-agent step log after a pipeline run completes.
+    if "orchestrator" in agents_dir.lower():
+        try:
+            import sys
+            sys.path.insert(0, agents_dir)
+            from trace_store import get_trace  # type: ignore
+
+            @app.get("/last_trace")
+            async def last_trace():
+                return {"steps": get_trace()}
+        except ImportError:
+            pass  # trace_store not available; skip endpoint
+
     for fd in files_to_delete:
         fd.unlink()
     for fd in folders_to_delete:
