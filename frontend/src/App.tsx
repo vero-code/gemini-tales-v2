@@ -23,11 +23,11 @@ const PROXY_URL = rawProxyUrl
   : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/proxy';
 
 // SET TO false to use real Veo 3.1 video generation
-const USE_MOCK_ANIMATION = true;
+const USE_MOCK_ANIMATION = false;
 // SET TO false to use real Gemini image generation
-const USE_MOCK_AVATAR = true;
+const USE_MOCK_AVATAR = false;
 // SET TO true to bypass the onboarding screen and load directly into the main story screen for testing
-const BYPASS_ONBOARDING = true;
+const BYPASS_ONBOARDING = false;
 
 const App: React.FC = () => {
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);

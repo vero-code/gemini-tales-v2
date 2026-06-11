@@ -1,6 +1,6 @@
 # ✨ Gemini Tales v2: The Evolution
 
-**This is the development repository for Gemini Tales post-hackathon.**
+**This is the post-hackathon development repository for Gemini Tales, evolved and updated for the Google for Startups AI Agents Challenge.**
 
 > [!IMPORTANT]
 > **Stable Contest Version:** If you are a judge or looking for the original hackathon submission (frozen as of March 16, 2026), please visit the [Original Gemini Tales Repository](https://github.com/vero-code/gemini-tales).
@@ -350,7 +350,9 @@ Follow these steps to ensure a magical and stable session:
 
 ## 👩‍🎓 Hackathon & Build Story
 
-Created for the **[Gemini Live Agent Challenge](https://devpost.com/software/gemini-tales)**.
+The original prototype was created for the **[Gemini Live Agent Challenge](https://devpost.com/software/gemini-tales)**. 
+
+This repository contains the evolved v2 version, developed further for the **Google for Startups AI Agents Challenge**.
 
 Check out the full story of how I built an "AI Nanny" to fight the sedentary lifestyle using Google AI and Google Cloud:  
 👉 **[Read the Build Story on Dev.to](https://dev.to/vero-code/gemini-tales-how-i-built-an-ai-nanny-to-fight-the-sedentary-lifestyle-5a65)**

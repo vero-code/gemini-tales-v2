@@ -388,7 +388,10 @@ The character must be IMMEDIATELY recognizable from any angle."""
         input_image = None
         if self.latest_portrait_path and os.path.exists(self.latest_portrait_path):
             try:
-                input_image = Image.open(self.latest_portrait_path)
+                with open(self.latest_portrait_path, "rb") as f:
+                    image_bytes = f.read()
+                mime_type = "image/png" if self.latest_portrait_path.lower().endswith(".png") else "image/jpeg"
+                input_image = types.Image(image_bytes=image_bytes, mime_type=mime_type)
                 logger.info(f"Using latest portrait as input frame for video: {self.latest_portrait_path}")
             except Exception as e:
                 logger.warning(f"Could not load latest portrait for video generation: {e}")
