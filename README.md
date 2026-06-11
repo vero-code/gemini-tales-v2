@@ -32,7 +32,7 @@ Gemini Tales is an interactive fairytale book and a **Creative Storyteller ✍�
 ## 📺 Watch in Action
 
 Gemini Tales - The Complete Story of V2.0:
-[![Gemini Tales Complete Story]()]()
+[![Gemini Tales Complete Story](https://img.youtube.com/vi/ZRDU64MuWV0/maxresdefault.jpg)](https://youtu.be/ZRDU64MuWV0)
 
 Gemini Tales - Early Submission:
 [![Gemini Tales Demo](https://img.youtube.com/vi/DWHs0eOIf_Q/maxresdefault.jpg)](https://youtu.be/DWHs0eOIf_Q)
