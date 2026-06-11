@@ -780,7 +780,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2]">
+    <div className="w-full min-h-screen flex flex-col items-center p-4 md:p-8 space-y-8 overflow-y-auto bg-[#faf7f2]">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -852,128 +852,134 @@ const App: React.FC = () => {
         
         <div className="flex items-center gap-3">
           {/* Connection status badge */}
-          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full px-4 py-2 shadow-sm">
-            <span className={`w-2.5 h-2.5 rounded-full ${
-              connectionStatus === 'Connected' 
-                ? 'bg-green-500 animate-pulse' 
-                : connectionStatus === 'Connecting...' 
-                  ? 'bg-yellow-500 animate-pulse' 
-                  : 'bg-red-500'
-            }`}></span>
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              {connectionStatus === 'Connected' ? 'Connected' : connectionStatus === 'Connecting...' ? 'Connecting' : 'Disconnected'}
-            </span>
-          </div>
+          {isOnboarded && (
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                connectionStatus === 'Connected' 
+                  ? 'bg-green-500 animate-pulse' 
+                  : connectionStatus === 'Connecting...' 
+                    ? 'bg-yellow-500 animate-pulse' 
+                    : 'bg-red-500'
+              }`}></span>
+              <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                {connectionStatus === 'Connected' ? 'Connected' : connectionStatus === 'Connecting...' ? 'Connecting' : 'Disconnected'}
+              </span>
+            </div>
+          )}
 
           {/* Connect / Disconnect button */}
-          {connectionStatus !== 'Connected' ? (
-            <button 
-              onClick={connect} 
-              className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-bold text-xs shadow-md transition-all active:scale-95 hover:shadow-lg"
-            >
-              Connect API
-            </button>
-          ) : (
-            <button 
-              onClick={disconnect} 
-              className="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full font-bold text-xs transition-all active:scale-95"
-            >
-              Disconnect
-            </button>
+          {isOnboarded && (
+            connectionStatus !== 'Connected' ? (
+              <button 
+                onClick={connect} 
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-bold text-xs shadow-md transition-all active:scale-95 hover:shadow-lg"
+              >
+                Connect API
+              </button>
+            ) : (
+              <button 
+                onClick={disconnect} 
+                className="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full font-bold text-xs transition-all active:scale-95"
+              >
+                Disconnect
+              </button>
+            )
           )}
 
           {/* Settings gear popover wrapper */}
-          <div className="relative z-50">
-            <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`p-2 rounded-full border border-gray-200 bg-white/80 hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all shadow-sm flex items-center justify-center ${
-                isSettingsOpen ? 'bg-purple-100 border-purple-300 text-purple-700' : ''
-              }`}
-              title="Device Settings"
-              style={{ width: '36px', height: '36px' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0Z" />
-              </svg>
-            </button>
+          {isOnboarded && (
+            <div className="relative z-50">
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className={`p-2 rounded-full border border-gray-200 bg-white/80 hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all shadow-sm flex items-center justify-center ${
+                  isSettingsOpen ? 'bg-purple-100 border-purple-300 text-purple-700' : ''
+                }`}
+                title="Device Settings"
+                style={{ width: '36px', height: '36px' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0Z" />
+                </svg>
+              </button>
 
-            {isSettingsOpen && (
-              <div className="absolute right-0 top-full mt-2.5 w-80 bg-white/95 backdrop-blur-xl border border-purple-100 rounded-3xl shadow-2xl p-6 z-50 animate-in slide-in-from-top-2 duration-200">
-                <div className="flex items-center justify-between mb-4 border-b border-purple-50 pb-2">
-                  <h3 className="font-black text-purple-950 text-md flex items-center gap-2">
-                    ⚙️ Mirror Settings
-                  </h3>
-                  <button 
-                    onClick={() => setIsSettingsOpen(false)}
-                    className="text-xs font-bold text-purple-600 hover:text-purple-800"
-                  >
-                    Close
-                  </button>
-                </div>
-
-                <div className="space-y-4 text-left">
-                  {/* Microphone selector */}
-                  <div>
-                    <label className="block text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1.5">Microphone</label>
-                    <select 
-                      className="w-full border border-purple-100 rounded-xl p-2.5 bg-white text-xs font-semibold text-purple-950 focus:border-purple-400 outline-none" 
-                      value={selectedMic} 
-                      onChange={e => setSelectedMic(e.target.value)}
-                    >
-                      <option value="">Default Microphone</option>
-                      {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Camera selector */}
-                  <div>
-                    <label className="block text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1.5">Camera</label>
-                    <select 
-                      className="w-full border border-purple-100 rounded-xl p-2.5 bg-white text-xs font-semibold text-purple-950 focus:border-purple-400 outline-none" 
-                      value={selectedCamera} 
-                      onChange={e => setSelectedCamera(e.target.value)}
-                    >
-                      <option value="">Default Camera</option>
-                      {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Audio/Video Streaming Toggles */}
-                  <div className="flex gap-2 pt-2 border-t border-purple-50">
+              {isSettingsOpen && (
+                <div className="absolute right-0 top-full mt-2.5 w-80 bg-white/95 backdrop-blur-xl border border-purple-100 rounded-3xl shadow-2xl p-6 z-50 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between mb-4 border-b border-purple-50 pb-2">
+                    <h3 className="font-black text-purple-950 text-md flex items-center gap-2">
+                      ⚙️ Mirror Settings
+                    </h3>
                     <button 
-                      onClick={toggleAudio} 
-                      disabled={connectionStatus !== 'Connected'}
-                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
-                        isAudioOn 
-                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                          : 'bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100'
-                      }`}
+                      onClick={() => setIsSettingsOpen(false)}
+                      className="text-xs font-bold text-purple-600 hover:text-purple-800"
                     >
-                      <span>{isAudioOn ? '🎙️ Mic ON' : '🎙️ Mic OFF'}</span>
-                    </button>
-                    <button 
-                      onClick={toggleVideo} 
-                      disabled={connectionStatus !== 'Connected'}
-                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
-                        isVideoOn 
-                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                          : 'bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100'
-                      }`}
-                    >
-                      <span>{isVideoOn ? '📷 Cam ON' : '📷 Cam OFF'}</span>
+                      Close
                     </button>
                   </div>
-                  
-                  {connectionStatus !== 'Connected' && (
-                    <p className="text-[10px] text-purple-800/90 italic font-bold text-center mt-1">
-                      * Connect API to enable microphone and camera streaming.
-                    </p>
-                  )}
+
+                  <div className="space-y-4 text-left">
+                    {/* Microphone selector */}
+                    <div>
+                      <label className="block text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1.5">Microphone</label>
+                      <select 
+                        className="w-full border border-purple-100 rounded-xl p-2.5 bg-white text-xs font-semibold text-purple-950 focus:border-purple-400 outline-none" 
+                        value={selectedMic} 
+                        onChange={e => setSelectedMic(e.target.value)}
+                      >
+                        <option value="">Default Microphone</option>
+                        {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Camera selector */}
+                    <div>
+                      <label className="block text-[10px] font-black text-purple-800 uppercase tracking-widest mb-1.5">Camera</label>
+                      <select 
+                        className="w-full border border-purple-100 rounded-xl p-2.5 bg-white text-xs font-semibold text-purple-950 focus:border-purple-400 outline-none" 
+                        value={selectedCamera} 
+                        onChange={e => setSelectedCamera(e.target.value)}
+                      >
+                        <option value="">Default Camera</option>
+                        {cameras.map(c => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Audio/Video Streaming Toggles */}
+                    <div className="flex gap-2 pt-2 border-t border-purple-50">
+                      <button 
+                        onClick={toggleAudio} 
+                        disabled={connectionStatus !== 'Connected'}
+                        className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                          isAudioOn 
+                            ? 'bg-green-100 text-green-700 border border-green-300' 
+                            : 'bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100'
+                        }`}
+                      >
+                        <span>{isAudioOn ? '🎙️ Mic ON' : '🎙️ Mic OFF'}</span>
+                      </button>
+                      <button 
+                        onClick={toggleVideo} 
+                        disabled={connectionStatus !== 'Connected'}
+                        className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                          isVideoOn 
+                            ? 'bg-green-100 text-green-700 border border-green-300' 
+                            : 'bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100'
+                        }`}
+                      >
+                        <span>{isVideoOn ? '📷 Cam ON' : '📷 Cam OFF'}</span>
+                      </button>
+                    </div>
+                    
+                    {connectionStatus !== 'Connected' && (
+                      <p className="text-[10px] text-purple-800/90 italic font-bold text-center mt-1">
+                        * Connect API to enable microphone and camera streaming.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Debug Console toggle button */}
           <div className="relative z-50">
@@ -1025,7 +1031,7 @@ const App: React.FC = () => {
       </header>
 
       {/* --- MAIN STORY EXPERIENCE (Beautiful UI) --- */}
-      <main className="w-full max-w-[1600px] flex-1 flex flex-col lg:flex-row gap-8">
+      <main className={`w-full max-w-[1600px] flex-1 flex flex-col gap-8 ${isOnboarded ? 'lg:flex-row' : 'items-center'}`}>
         {!isOnboarded ? (
           <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-in fade-in duration-500">
             <div className="glass-card rounded-[40px] p-8 shadow-xl bg-white/60 border border-white/50 backdrop-blur-md text-center">
